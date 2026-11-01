@@ -22,5 +22,6 @@ How to read the table:
 | [`coop-...-git-...-flash_10-steps250`](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250/summary.md) | `coop --git` | 3.8 Flash, high | `flash_10` | 250 | 28K | None | Do agents finish with more steps? | 8/10 | `$19.87` |
 | [`coop-...-flash_10-steps250`](../results/coop-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) | `coop` | 3.8 Flash, high | `flash_10` | 250 | 28K | No shared git | Does the shared git remote matter? | 8/10 | `$23.05` |
 | [`coop-...-git-...-flash_10-steps250-compact64k`](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250-compact64k/summary.md) | `coop --git` | 3.8 Flash, high | `flash_10` | 250 | 64K | None | `coop` vs. `solo` at the same per-agent budget | 8/10 | `$21.68` |
+| [`solo-...-3-flash-...-minimal`](../results/solo-msa_v2-gemini-3-flash-flash_10-minimal/summary.md) | `solo` | 3 Flash preview, minimal | `flash_10` | 100 | 28K | None | Reproduce a teammate's vanilla-upstream run | 7/10 | `$1.39` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
