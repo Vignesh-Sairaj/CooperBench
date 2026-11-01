@@ -10,6 +10,7 @@
 
 - Start each task by reading [`notes/index.md`](notes/index.md).
 - Write decisions, setup findings, and experiment writeups to `notes/` as short, scannable Markdown.
+- Write notes and run summaries for teammates with no prior context. Use plain language, define terms where they are used, and avoid our own shorthand. Experiment notes cover what was run, why, the results, and the conclusions; keep implementation details (function names, flags, config files) in the setup notes. Every `results/<run_name>/summary.md` needs a plain-language **Experiment** section (what the run tests and why) and **Observations**.
 - Raw trajectories stay in `logs/` (gitignored). Export run summaries to `results/<run_name>/`, and upload the raw logs as described in [`notes/logs_archive.md`](notes/logs_archive.md).
 - Update [`notes/index.md`](notes/index.md) whenever you add, rename, or remove a note in `notes/`, and add a row to [`notes/runs.md`](notes/runs.md) for every run exported to `results/`.
 
