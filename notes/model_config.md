@@ -72,6 +72,8 @@ Summing `prompt_tokens` per timestamp minute across trajectories reproduces AI S
 | `coop --git` setup check, 28K, `HIGH` | 2 | 82K | 4.2 | 359.5K |
 | `solo` 3 pairs, 28K, no thought summaries | 3 | 90K | 5.3 | 444.3K |
 | `solo` 3 pairs, 64K | 3 | 163K | 5.1 | 699.4K (2 overlapping agents) |
+| `coop --git` `flash_10` (100 and 250 steps), 28K (`-c 5`) | 10 | ~80K | ~4.2 | 986.3K / 1,046.2K |
+| `solo` `flash_10` (250 steps), 64K (`-c 4`) | 4 | ~160K | ~5.0 | 1,083.1K |
 
 - **`coop` agents are not lighter than `solo` agents** (82K vs. 76K tok/min/agent).
 - **Load peaks right after launch** (~1.25x average) when all agents read files at once:

@@ -7,10 +7,10 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Task | Owner | Details |
 | :--- | :--- | :--- |
 | Pre-pull the `flash_10` task images | | Each teammate on their own machine: `tools/pull_images.sh flash_10`. |
-| Run the four baselines on `flash_10` | | `solo`, `coop`, `coop --git`, `team` with the [reference setup](model_config.md#reference-setup). First `solo` run passed 1/10; `solo` repeat + `coop --git` (100 and 250 steps) + step-budget variants queued on `flash_10`. |
-| Review the `results/` format | | Drafted in [results_format.md](results_format.md), with [`tools/run.sh`](../tools/run.sh) and [`tools/export_results.py`](../tools/export_results.py). First export committed in [`results/solo-msa_v2-gemini-3-8-flash-flash_10/`](../results/solo-msa_v2-gemini-3-8-flash-flash_10/summary.md). |
+| Run the four baselines on `flash_10` | | `solo` (`1/10`, `0/10` repeat) and `coop --git` (`3/10` at 100 steps, `8/10` at 250 steps) done; running `coop` (no `--git`) and `team` at 250 steps plus `coop --git` at 250 steps + 64K next. See [baseline_ablation_flash10.md](baseline_ablation_flash10.md). |
+| Review the `results/` format | | Drafted in [results_format.md](results_format.md), with [`tools/run.sh`](../tools/run.sh) and [`tools/export_results.py`](../tools/export_results.py). Seven `flash_10` runs committed under `results/`. |
 | Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |
-| Decide how agents handle the 100-step limit | | 64K compaction alone did not fix the 0 submissions at 100 steps (see [harness_limits.md](harness_limits.md)). Testing 250 steps (`steps250.yaml`), a 100-step budget notice (`budgetprompt.yaml`), and 250 steps + 64K compaction (`steps250_compact64k.yaml`) on `flash_10`. |
+| Freeze team step-limit and compaction settings | | Wave 1 `flash_10` ablation done: static `budgetprompt` scored `0/10`, `solo` `steps250` scored `2/10`, `coop --git` `steps250` scored `8/10`, and `solo` `steps250-compact64k` scored `7/10`. Review [baseline_ablation_flash10.md](baseline_ablation_flash10.md) after Wave 2 completes. |
 | Team-size experiment with 3 and 4 agents (later) | | `coop` and `team` already start one agent per feature (`-f 1,2,3` runs 3 agents), and `team3_250` / `team3_all` list three-feature groups. Blocker: the grader only checks two features (the local path uses the first two features; the batch path crashes on three). Extend it to merge all patches and require every feature's tests to pass. About 10 agents fit per API key, so only 3 groups of three at a time. |
 | Confirm `HIGH` thinking with the team | | The status report left the thinking setting open. Share [model_config.md](model_config.md). |
 
@@ -18,7 +18,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 
 **Question:** What is the highest `-c` we can run without losing agents to the 120-second `docker run` timeout or slowing down on Gemini API rate limits?
 
-**Finding:** The 1M input-tokens-per-minute (TPM) cap per API key sets the limit (~10 concurrent agents per key at 28K compaction, ~4 at 64K). Because `coop` agents average ~82K input tok/min/agent (similar to `solo`'s ~76K), use `-c 10` for `solo` and `-c 5` for `coop` and `team` at 28K compaction (`-c 4` and `-c 2` at 64K). Full numbers and formula in [model_config.md](model_config.md#concurrency); verifying `coop --git` at `-c 5` on `flash_10` next.
+**Finding:** The 1M input-tokens-per-minute (TPM) cap per API key sets the limit (~10 concurrent agents per key at 28K compaction, ~4 at 64K). Because `coop` agents average ~80K to 82K input tok/min/agent (similar to `solo`'s ~76K), use `-c 10` (`-c 8` for zero launch-burst `429` retries) for `solo` and `-c 5` for `coop` and `team` at 28K compaction, and `-c 4` (`solo`) and `-c 2` (`coop` and `team`) at 64K. Verified across 7 `flash_10` runs (`0` agent errors); see [model_config.md](model_config.md#concurrency) and [baseline_ablation_flash10.md](baseline_ablation_flash10.md).
 
 ## Step Budget Options
 
