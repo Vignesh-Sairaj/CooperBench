@@ -1,0 +1,41 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250-compact64k",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3.8-flash",
+  "subset": "flash_10",
+  "concurrency": 2,
+  "key_slot": null,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250-compact64k -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/steps250_compact64k.yaml --setting coop -c 2 --backend docker --git",
+  "git_commit": "d77801bd44d94d412ab76845032cf16d031ab441",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/steps250_compact64k.yaml",
+  "agent_config": "# Variant config: raise per-agent step limit to 250 and context compaction trigger to 64K tokens.\n# Pass via: AGENT_CONFIG=configs/variants/steps250_compact64k.yaml RUN_SUFFIX=steps250-compact64k tools/run.sh ...\nagent:\n  cost_limit: 10.0\n  step_limit: 250\n  compaction_token_trigger: 64000\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-01T07:38:45.645963",
+  "completed_at": "2026-11-01T11:40:52.765059",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250-compact64k",
+  "headline": {
+    "pairs": 10,
+    "passed": 8,
+    "pass_rate": 0.8,
+    "merge_conflicts": 0,
+    "agents_at_step_limit": 1,
+    "agents_errored": 0,
+    "cost_usd": 21.6833,
+    "cost_per_pair_usd": 2.1683,
+    "wall_minutes": 242.1
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1199223,
+    "median_input_tokens_per_min": 346887,
+    "peak_calls_per_min": 35,
+    "total_retries": 9,
+    "rate_limit_retries": 6,
+    "server_busy_retries": 3
+  }
+}
