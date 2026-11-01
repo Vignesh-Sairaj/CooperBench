@@ -7,10 +7,10 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Task | Owner | Details |
 | :--- | :--- | :--- |
 | Find the best concurrency (`-c`) for our machines | | See [Concurrency probe](#concurrency-probe) below. |
-| Check `HIGH` thinking on one pair | | Run `dottxt_ai_outlines_task` task 1371 (features 1 and 2) in `coop --git` with `--agent-config configs/gemini_3_8_flash_high.yaml`, and confirm the trajectories show `HIGH` thinking. |
-| Pre-pull the `flash_10` task images | | All 10 images in `dataset/subsets/flash_10.json`, so timed runs never wait on downloads. |
+| Pre-pull the `flash_10` task images | | Done locally; each teammate needs to pull them on their own machine. |
 | Run the four baselines on `flash_10` | | `solo`, `coop`, `coop --git`, `team` with the [default config](model_config.md). Gates which interventions we build. |
 | Script to export runs into `results/` | | Turn `logs/<run>/` (`result.json`, `eval.json`) into `results/<run>/metrics.json` and a `summary.md` stub. |
+| Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN` and `HF_LOGS_REPO`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |
 | Confirm `HIGH` thinking with the team | | The status report left the thinking setting open. Share [model_config.md](model_config.md). |
 
 ## Concurrency Probe
@@ -33,5 +33,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Task | Owner | Result |
 | :--- | :--- | :--- |
 | Local setup: Docker, Redis, Python env, all tests passing | | 447 tests pass. |
-| First end-to-end run (one `coop --git` pair, no config file) | | Setup works; the pair failed (merge conflict), likely due to the `LOW` thinking default. |
+| First end-to-end run (one `coop --git` pair, no config file) | | Setup works; the pair failed (merge conflict). |
+| Check `HIGH` thinking on one pair | | Config works (about 800 reasoning tokens per call vs. 0 without it). Pair still failed: feature 1 passed, agent2 never wrote a patch for feature 2. |
 | Pick default model and thinking level | | [model_config.md](model_config.md) |
+| Set up the raw logs archive | | Private Hugging Face dataset, setup-check runs uploaded. See [logs_archive.md](logs_archive.md). |

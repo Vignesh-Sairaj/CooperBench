@@ -10,7 +10,7 @@
 
 - Start each task by reading [`notes/index.md`](notes/index.md).
 - Write decisions, setup findings, and experiment writeups to `notes/` as short, scannable Markdown.
-- Raw trajectories stay in `logs/` (gitignored). Export run summaries (`summary.md`, `metrics.json`) to `results/<run_name>/`.
+- Raw trajectories stay in `logs/` (gitignored). Export run summaries (`summary.md`, `metrics.json`) to `results/<run_name>/`, and upload the raw logs as described in [`notes/logs_archive.md`](notes/logs_archive.md).
 - Update [`notes/index.md`](notes/index.md) whenever you add or change a file in `notes/` or `results/`.
 
 ## Running Benchmarks
