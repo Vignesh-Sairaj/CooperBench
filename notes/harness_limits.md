@@ -30,7 +30,7 @@ Before the full experiments, we re-ran 3 failed `solo` pairs with 100 steps unde
 - **What counts as a step:** every model response counts, including responses that run no command. Compaction summaries do not count. At the limit (100 by default) the agent is stopped.
 - **Agents are not told the limit:** neither the `solo` nor the `coop` prompt mentions it.
 - **Only pushed work is graded:** the grader takes the agent's pushed branch or opened pull request. Edits that were never committed and pushed count as an empty patch, so an agent stopped one step before pushing scores the same as one that did nothing.
-- **Telling the agent the limit is not enough:** we added the limit to the task prompt and scored 0/10. The agent sees the limit on every call, but nothing tells it which step it is on, and compaction removes the history it could count from. No agent mentioned the limit in its reasoning. An opt-in step counter now shows "Step n of N: k left" on every turn (`agent.step_counter`, used by `configs/variants/stepcounter.yaml`); its run is pending.
+- **Telling the agent the limit is not enough:** we added the limit to the task prompt and scored 0/10. The agent sees the limit on every call, but nothing tells it which step it is on, and compaction removes the history it could count from. No agent mentioned the limit in its reasoning. An opt-in step counter that shows "Step n of N: k left" on every turn (`agent.step_counter`, used by `configs/variants/stepcounter.yaml`) fixed this for `solo`: 7/10 at 100 steps, with 9 of 10 agents pushing before the limit.
 - **Bash only:** agents edit files through shell commands, with no dedicated file-editing or search tools.
 
 ## Harness Bugs We Hit

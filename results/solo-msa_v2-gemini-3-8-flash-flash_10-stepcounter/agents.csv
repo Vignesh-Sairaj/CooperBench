@@ -1,0 +1,11 @@
+repo,task_id,feature_a,feature_b,agent_id,feature_id,role,status,steps,cost_usd,patch_lines,model_calls,reasoning_tokens,compactions,error
+dottxt_ai_outlines_task,1655,7,10,solo,,solo,Submitted,74,0.600634,178,74,47250,9,
+dspy_task,8394,3,4,solo,,solo,LimitsExceeded,100,0.83725,0,100,96403,9,
+go_chi_task,26,1,2,solo,,solo,Submitted,100,1.181686,259,100,137841,11,
+huggingface_datasets_task,6252,4,6,solo,,solo,LimitsExceeded,100,0.997025,88,99,117756,11,
+openai_tiktoken_task,0,6,8,solo,,solo,Submitted,100,0.740563,64,100,71497,10,
+pallets_click_task,2800,1,7,solo,,solo,LimitsExceeded,100,1.356708,243,100,167464,18,
+pallets_jinja_task,1559,4,8,solo,,solo,LimitsExceeded,100,1.042525,557,100,119388,13,
+pallets_jinja_task,1621,4,5,solo,,solo,Submitted,100,1.001587,278,100,127052,12,
+pillow_task,290,4,5,solo,,solo,LimitsExceeded,100,0.714657,174,100,60036,9,
+typst_task,6554,7,8,solo,,solo,LimitsExceeded,100,0.633266,223,100,56460,7,
