@@ -27,5 +27,6 @@ How to read the table:
 | [`solo-...-flash_10-low`](../results/solo-msa_v2-gemini-3-8-flash-flash_10-low/summary.md) | `solo` | 3.8 Flash, low | `flash_10` | 100 | 28K | None | Reproduce a teammate's run; thinking-level effect | 6/10 | `$2.92` |
 | [`solo-...-3-flash-...-low`](../results/solo-msa_v2-gemini-3-flash-flash_10-low/summary.md) | `solo` | 3 Flash preview, low | `flash_10` | 100 | 28K | None | Model effect at equal thinking (vs. 3.8 Flash, low) | 5/10 | `$1.82` |
 | [`coop-...-git-...-flash_10-low`](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-low/summary.md) | `coop --git` | 3.8 Flash, low | `flash_10` | 100 | 28K | None | Reproduce a teammate's run; thinking-level effect | 7/10 | `$4.93` |
+| [`team-...-flash_10-steps250`](../results/team-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) | `team` | 3.8 Flash, high | `flash_10` | 250 | 28K | Lead and member | Does a lead-member structure beat two peers? | 5/10 | `$23.61` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).

@@ -1,0 +1,56 @@
+repo,task_id,feature_a,feature_b,agent_id,feature_id,role,status,steps,cost_usd,patch_lines,model_calls,reasoning_tokens,compactions,error
+dottxt_ai_outlines_task,1655,7,10,agent2,10,member,Submitted,81,0.426784,176,81,23123,4,
+dottxt_ai_outlines_task,1655,7,10,agent1,7,lead,Submitted,83,0.442759,136,83,28964,4,
+dspy_task,8394,3,4,agent2,4,member,LimitsExceeded,250,1.489696,0,250,106800,18,
+dspy_task,8394,3,4,agent1,3,lead,Submitted,187,1.114452,306,187,53265,12,
+go_chi_task,26,1,2,agent2,2,member,Submitted,250,1.740036,407,249,173584,19,
+go_chi_task,26,1,2,agent1,1,lead,Submitted,244,1.706089,141,244,139928,14,
+huggingface_datasets_task,6252,4,6,agent2,6,member,Submitted,132,0.603152,57,132,27473,5,
+huggingface_datasets_task,6252,4,6,agent1,4,lead,Submitted,194,0.956751,90,194,51728,10,
+openai_tiktoken_task,0,6,8,agent2,8,member,Submitted,92,0.47454,42,92,31059,4,
+openai_tiktoken_task,0,6,8,agent1,6,lead,Submitted,93,0.434138,35,93,20540,3,
+pallets_click_task,2800,1,7,agent1,1,lead,LimitsExceeded,250,1.471524,0,250,119737,15,
+pallets_click_task,2800,1,7,agent2,7,member,Submitted,190,1.815275,229,190,195095,18,
+pallets_jinja_task,1559,4,8,agent2,8,member,LimitsExceeded,250,2.503182,0,250,294904,30,
+pallets_jinja_task,1559,4,8,agent1,4,lead,LimitsExceeded,250,2.702328,1,249,347748,35,
+pallets_jinja_task,1621,4,5,agent2,5,member,Submitted,130,0.781365,154,130,65083,8,
+pallets_jinja_task,1621,4,5,agent1,4,lead,Error,128,1.126547,0,127,122886,12,"litellm.APIConnectionError: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+Traceback (most recent call last):
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/main.py"", line 3338, in completion
+    response = vertex_chat_completion.completion(  # type: ignore
+        model=model,
+    ...<17 lines>...
+        extra_headers=headers,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py"", line 2766, in completion
+    data = sync_transform_request_body(
+        **transform_request_params,
+    ...<2 lines>...
+        vertex_auth_header=auth_header,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 683, in sync_transform_request_body
+    return _transform_request_body(
+        messages=messages,
+    ...<4 lines>...
+        optional_params=optional_params,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 636, in _transform_request_body
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 586, in _transform_request_body
+    content = litellm.GoogleAIStudioGeminiConfig()._transform_messages(
+        messages=messages, model=model
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/gemini/chat/transformation.py"", line 151, in _transform_messages
+    return _gemini_convert_messages_with_history(messages=messages, model=model)
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 529, in _gemini_convert_messages_with_history
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 507, in _gemini_convert_messages_with_history
+    raise Exception(
+    ...<3 lines>...
+    )
+Exception: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+"
+pillow_task,290,4,5,agent2,5,member,Submitted,205,1.126568,133,205,71121,12,
+pillow_task,290,4,5,agent1,4,lead,Submitted,214,1.125436,108,214,66172,12,
+typst_task,6554,7,8,agent2,8,member,Submitted,128,0.643482,172,128,37918,7,
+typst_task,6554,7,8,agent1,7,lead,Submitted,181,0.923604,187,181,55263,9,
