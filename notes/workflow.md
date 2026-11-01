@@ -24,6 +24,8 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    HF_TOKEN=hf_...      # for the raw logs archive, see logs_archive.md
    ```
 
+   To run experiments in parallel, add one key per GCP project as `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on. Rate limits apply per project, so two keys from the same project share one limit.
+
 5. **Raw logs archive:** join the Hugging Face organization and create your token, as described in [logs_archive.md](logs_archive.md).
 
 ## Run a Benchmark
@@ -37,16 +39,26 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
 2. **Run** with the [reference setup](model_config.md#reference-setup). `tools/run.sh` fills in the model, agent config, and backend, and names the run:
 
    ```bash
-   tools/run.sh solo flash_10 10              # solo-msa_v2-gemini-3-8-flash-flash_10
-   tools/run.sh coop flash_10 5 --git         # coop-msa_v2-git-gemini-3-8-flash-flash_10
-   RUN_SUFFIX=verifier tools/run.sh coop flash_10 5 --git --verifier    # intervention arm (--verifier is a future flag)
+   tools/run.sh solo flash_10 8               # solo-msa_v2-gemini-3-8-flash-flash_10
+   tools/run.sh coop flash_10 4 --git         # coop-msa_v2-git-gemini-3-8-flash-flash_10
+   RUN_SUFFIX=verifier tools/run.sh coop flash_10 4 --git --verifier    # intervention arm (--verifier is a future flag)
    ```
 
-   Run one benchmark at a time per API key (see [Concurrency](model_config.md#concurrency)). A run over `flash_10` takes about an hour. Grading runs automatically at the end.
+   Run one benchmark at a time per GCP project key (see [Concurrency](model_config.md#concurrency)). A run over `flash_10` takes one to two hours. Grading runs automatically at the end.
+
+   To run different experiments in parallel, give each run its own key with `KEY_SLOT` (each in its own terminal, after `set -a; source .env; set +a`). Each parallel run needs a distinct run name:
+
+   ```bash
+   KEY_SLOT=1 tools/run.sh solo flash_10 8
+   KEY_SLOT=2 tools/run.sh team flash_10 4
+   KEY_SLOT=3 RUN_SUFFIX=steps250 AGENT_CONFIG=configs/variants/steps250.yaml tools/run.sh coop flash_10 4 --git
+   ```
+
+   `launch.json` and `run.json` record the slot number (never the key). `resources.log` counts every container on the machine, including other parallel runs.
 
 3. **Watch it** (optional): `tail -f logs/<run_name>/console.log`, and `logs/<run_name>/resources.log` for load, memory, and container count.
 
-4. **Check for throttling:** `tools/run.sh` prints the model retry count at the end. If it is not zero, the Gemini rate limit slowed the agents; rerun at a lower `-c` or on another teammate's key before using the results.
+4. **Check for throttling:** `tools/run.sh` prints the model retry count at the end. If it is not zero, the Gemini rate limit slowed the agents; rerun at a lower `-c` or on a key from another GCP project before using the results.
 
 Rerunning with the same name skips pairs that already have results; add `--force` to `tools/run.sh` to redo them. To redo only the grading: `uv run --frozen cooperbench eval -n <run_name> --backend docker --force`.
 

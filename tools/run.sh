@@ -10,6 +10,11 @@
 # intervention or variant arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
 # Set AGENT_CONFIG to override the default config (configs/gemini_3_8_flash_high.yaml).
 #
+# Gemini rate limits are per GCP project, so parallel runs need keys from different
+# projects. Put them in .env as GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... and set
+# KEY_SLOT=<n> to run with GEMINI_API_KEY_<n>. Without KEY_SLOT the run uses
+# GEMINI_API_KEY. Only the slot number is recorded, never the key.
+#
 # Writes into logs/<run_name>/:
 #   launch.json     command, git commit, agent config, package versions, concurrency
 #   console.log     everything the run printed (model retry warnings land here)
@@ -30,6 +35,15 @@ UV_RUN="${UV_RUN:-uv run --frozen}"
 MODEL="gemini/gemini-3.8-flash"
 AGENT="mini_swe_agent_v2"
 CONFIG="${AGENT_CONFIG:-configs/gemini_3_8_flash_high.yaml}"
+KEY_SLOT="${KEY_SLOT:-}"
+if [[ -n "$KEY_SLOT" ]]; then
+  KEY_VAR="GEMINI_API_KEY_${KEY_SLOT}"
+  if [[ -z "${!KEY_VAR:-}" ]]; then
+    echo "error: KEY_SLOT=$KEY_SLOT but $KEY_VAR is not set (run: set -a; source .env; set +a)" >&2
+    exit 1
+  fi
+  export GEMINI_API_KEY="${!KEY_VAR}"
+fi
 
 GIT_ENABLED=False
 for a in "${EXTRA[@]}"; do [[ "$a" == "--git" ]] && GIT_ENABLED=True; done
@@ -45,9 +59,9 @@ mkdir -p "$RUN_DIR"
 CMD=(cooperbench run -n "$RUN_NAME" -s "$SUBSET" -a "$AGENT" -m "$MODEL" --agent-config "$CONFIG"
      --setting "$SETTING" -c "$CONC" --backend docker "${EXTRA[@]}")
 
-$UV_RUN python - "$RUN_DIR/launch.json" "$RUN_NAME" "$SETTING" "$SUBSET" "$CONC" "$GIT_ENABLED" "$CONFIG" "${CMD[*]}" <<'PY'
+$UV_RUN python - "$RUN_DIR/launch.json" "$RUN_NAME" "$SETTING" "$SUBSET" "$CONC" "$GIT_ENABLED" "$CONFIG" "${CMD[*]}" "$KEY_SLOT" <<'PY'
 import datetime, importlib.metadata as md, json, os, pathlib, subprocess, sys
-out, run_name, setting, subset, conc, git_enabled, config, cmd = sys.argv[1:9]
+out, run_name, setting, subset, conc, git_enabled, config, cmd, key_slot = sys.argv[1:10]
 git = lambda *a: subprocess.run(["git", *a], capture_output=True, text=True).stdout.strip()
 json.dump({
     "run_name": run_name,
@@ -55,6 +69,7 @@ json.dump({
     "subset": subset,
     "git_enabled": git_enabled == "True",
     "concurrency": int(conc),
+    "key_slot": int(key_slot) if key_slot else None,
     "command": cmd,
     "launched_at": datetime.datetime.now().isoformat(timespec="seconds"),
     "git_commit": git("rev-parse", "HEAD"),
@@ -73,7 +88,7 @@ PY
 SAMPLER=$!
 trap 'kill $SAMPLER 2>/dev/null || true' EXIT
 
-echo "run: $RUN_NAME"
+echo "run: $RUN_NAME (key slot: ${KEY_SLOT:-default})"
 $UV_RUN "${CMD[@]}" 2>&1 | tee "$RUN_DIR/console.log"
 echo "rate-limit retries (429): $(grep -ciE '^Retrying .*RateLimitError' "$RUN_DIR/console.log" || true)"
 echo "server-busy retries (5xx): $(grep -ciE '^Retrying .*(ServiceUnavailableError|InternalServerError|BadGatewayError|GatewayTimeoutError)' "$RUN_DIR/console.log" || true)"

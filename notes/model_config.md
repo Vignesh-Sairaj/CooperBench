@@ -37,7 +37,7 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | Thinking | `HIGH` | Best quality for multi-step coding and merging. Thoughts are saved in trajectories for failure analysis. |
 | Cost cap | `$10` per agent | Upstream's `$3` cap could stop `HIGH`-thinking agents early. |
 | Step limit | 100 per agent | Upstream default (250-step and budget-prompt variants under test). |
-| Concurrency | `-c 8` (`solo`) or `-c 4` (`coop`, `team`) at 28K, one run per key | Keeps ~8 concurrent agents per 1M input-TPM key, leaving headroom for launch peaks; see [Concurrency](#concurrency). |
+| Concurrency | `-c 8` (`solo`) or `-c 4` (`coop`, `team`) at 28K, one run per GCP project key | Keeps ~8 concurrent agents per 1M input-TPM project, leaving headroom for launch peaks; see [Concurrency](#concurrency). |
 
 Thinking and the cost cap are set in [`configs/gemini_3_8_flash_high.yaml`](../configs/gemini_3_8_flash_high.yaml).
 
@@ -91,7 +91,7 @@ At 28K this gives 1M / (80K x 1.6) ≈ 8 agents; at 64K it gives 1M / (160K x 1.
 | 28K (reference) | `-c 8` | `-c 4` | 8 | 10 agents (`-c 10` / `-c 5`) logged 0 to 64 `429` retries per run |
 | 64K | `-c 4` | `-c 2` | 4 | 4 agents peaked at 1,083.1K tok/min with 1 `429` retry |
 
-Throttled calls retry with 4 to 60 second backoff (up to 10 attempts). In `solo` this only adds wall time: a retry happens inside one model call and does not use a step. In `coop` and `team`, a slowed agent can make its partner's `send_message --wait` time out, so retries can change outcomes there. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run. Runs before this change used `-c 10` (`solo`) and `-c 5` (`coop`) at 28K; see each run's `run.json` for its concurrency and retry counts. To run more agents at once, split experiments across separate teammates' API keys.
+Throttled calls retry with 4 to 60 second backoff (up to 10 attempts). In `solo` this only adds wall time: a retry happens inside one model call and does not use a step. In `coop` and `team`, a slowed agent can make its partner's `send_message --wait` time out, so retries can change outcomes there. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run. Runs before this change used `-c 10` (`solo`) and `-c 5` (`coop`) at 28K; see each run's `run.json` for its concurrency and retry counts. To run more agents at once, run separate experiments in parallel, each with a key from a different GCP project (`KEY_SLOT`, see [workflow.md](workflow.md)). Rate limits apply per project, not per key.
 
 ## Why the Config File Matters
 

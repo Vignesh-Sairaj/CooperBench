@@ -16,7 +16,7 @@
 ## Running Benchmarks
 
 - Run every benchmark with the [reference setup](notes/model_config.md#reference-setup) (use `tools/run.sh`), identical across every run in a comparison. Follow [`notes/workflow.md`](notes/workflow.md) for the full sequence from pre-pulling images to committing results.
-- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). Use ~8 concurrent agents per Gemini API key (`-c 8` for `solo`, `-c 4` for `coop` and `team` at 28K compaction), one run at a time per key, and check the retry counts after each run (see [`notes/model_config.md`](notes/model_config.md#concurrency)).
+- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). Use ~8 concurrent agents per Gemini API key (`-c 8` for `solo`, `-c 4` for `coop` and `team` at 28K compaction), one run at a time per GCP project key (run separate experiments in parallel on keys from separate projects with `KEY_SLOT`, see [`notes/workflow.md`](notes/workflow.md)), and check the retry counts after each run (see [`notes/model_config.md`](notes/model_config.md#concurrency)).
 
 ## Before Pushing
 

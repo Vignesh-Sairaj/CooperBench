@@ -352,6 +352,7 @@ def main() -> int:
         "model": config.get("model"),
         "subset": launch.get("subset"),
         "concurrency": launch.get("concurrency", config.get("concurrency")),
+        "key_slot": launch.get("key_slot"),
         "command": launch.get("command"),
         "git_commit": launch.get("git_commit"),
         "git_dirty": launch.get("git_dirty"),
