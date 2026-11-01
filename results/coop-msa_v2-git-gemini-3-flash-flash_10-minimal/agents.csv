@@ -1,0 +1,91 @@
+repo,task_id,feature_a,feature_b,agent_id,feature_id,role,status,steps,cost_usd,patch_lines,model_calls,reasoning_tokens,compactions,error
+dottxt_ai_outlines_task,1655,7,10,agent2,10,peer,Submitted,12,0.035092,59,11,0,0,
+dottxt_ai_outlines_task,1655,7,10,agent1,7,peer,Submitted,19,0.047157,55,18,0,0,
+dspy_task,8394,3,4,agent1,3,peer,Submitted,34,0.14023,376,33,0,1,
+dspy_task,8394,3,4,agent2,4,peer,Error,44,0.117098,376,26,0,1,"litellm.APIConnectionError: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+Traceback (most recent call last):
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/main.py"", line 3338, in completion
+    response = vertex_chat_completion.completion(  # type: ignore
+        model=model,
+    ...<17 lines>...
+        extra_headers=headers,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py"", line 2766, in completion
+    data = sync_transform_request_body(
+        **transform_request_params,
+    ...<2 lines>...
+        vertex_auth_header=auth_header,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 683, in sync_transform_request_body
+    return _transform_request_body(
+        messages=messages,
+    ...<4 lines>...
+        optional_params=optional_params,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 636, in _transform_request_body
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 586, in _transform_request_body
+    content = litellm.GoogleAIStudioGeminiConfig()._transform_messages(
+        messages=messages, model=model
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/gemini/chat/transformation.py"", line 151, in _transform_messages
+    return _gemini_convert_messages_with_history(messages=messages, model=model)
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 529, in _gemini_convert_messages_with_history
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 507, in _gemini_convert_messages_with_history
+    raise Exception(
+    ...<3 lines>...
+    )
+Exception: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+"
+go_chi_task,26,1,2,agent2,2,peer,Submitted,49,0.151654,151,46,0,2,
+go_chi_task,26,1,2,agent1,1,peer,Submitted,45,0.141788,160,44,0,1,
+huggingface_datasets_task,6252,4,6,agent2,6,peer,Submitted,26,0.089846,13,26,0,0,
+huggingface_datasets_task,6252,4,6,agent1,4,peer,Submitted,34,0.093887,24,33,0,0,
+openai_tiktoken_task,0,6,8,agent2,8,peer,Submitted,25,0.071847,70,23,0,0,
+openai_tiktoken_task,0,6,8,agent1,6,peer,Submitted,23,0.106837,93,20,0,1,
+pallets_click_task,2800,1,7,agent1,1,peer,Submitted,64,0.229779,82,37,0,4,
+pallets_click_task,2800,1,7,agent2,7,peer,Submitted,71,0.242731,132,58,0,2,
+pallets_jinja_task,1559,4,8,agent2,8,peer,Submitted,23,0.084232,270,22,0,0,
+pallets_jinja_task,1559,4,8,agent1,4,peer,Submitted,33,0.107586,280,32,0,0,
+pallets_jinja_task,1621,4,5,agent1,4,peer,Submitted,26,0.073318,54,25,0,0,
+pallets_jinja_task,1621,4,5,agent2,5,peer,Submitted,25,0.076941,52,24,0,0,
+pillow_task,290,4,5,agent1,4,peer,Submitted,38,0.108313,193,37,0,0,
+pillow_task,290,4,5,agent2,5,peer,Submitted,34,0.135579,219,31,0,1,
+typst_task,6554,7,8,agent2,8,peer,Submitted,45,0.148721,87,44,0,0,
+typst_task,6554,7,8,agent1,7,peer,Error,24,0.082732,158,22,0,0,"litellm.APIConnectionError: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+Traceback (most recent call last):
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/main.py"", line 3338, in completion
+    response = vertex_chat_completion.completion(  # type: ignore
+        model=model,
+    ...<17 lines>...
+        extra_headers=headers,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py"", line 2766, in completion
+    data = sync_transform_request_body(
+        **transform_request_params,
+    ...<2 lines>...
+        vertex_auth_header=auth_header,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 683, in sync_transform_request_body
+    return _transform_request_body(
+        messages=messages,
+    ...<4 lines>...
+        optional_params=optional_params,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 636, in _transform_request_body
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 586, in _transform_request_body
+    content = litellm.GoogleAIStudioGeminiConfig()._transform_messages(
+        messages=messages, model=model
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/gemini/chat/transformation.py"", line 151, in _transform_messages
+    return _gemini_convert_messages_with_history(messages=messages, model=model)
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 529, in _gemini_convert_messages_with_history
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 507, in _gemini_convert_messages_with_history
+    raise Exception(
+    ...<3 lines>...
+    )
+Exception: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+"

@@ -1,0 +1,11 @@
+repo,task_id,feature_a,feature_b,setting,both_passed,feature_a_passed,feature_b_passed,merge_status,merge_strategy,eval_error,n_agents,agents_at_step_limit,agents_errored,steps_total,cost_usd,duration_s,messages_sent,patch_lines_total
+dottxt_ai_outlines_task,1655,7,10,solo,True,True,True,n/a,,,1,0,0,12,0.044586,48.0,0,17
+dspy_task,8394,3,4,solo,False,True,False,n/a,,,1,0,0,40,0.102624,142.7,0,233
+go_chi_task,26,1,2,solo,True,True,True,n/a,,,1,0,0,41,0.120741,98.7,0,236
+huggingface_datasets_task,6252,4,6,solo,True,True,True,n/a,,,1,0,0,21,0.065566,69.2,0,35
+openai_tiktoken_task,0,6,8,solo,True,True,True,n/a,,,1,0,0,72,0.21471,211.0,0,111
+pallets_click_task,2800,1,7,solo,True,True,True,n/a,,,1,0,0,51,0.176985,180.9,0,158
+pallets_jinja_task,1559,4,8,solo,False,False,False,n/a,,,1,1,0,100,0.583796,615.2,0,0
+pallets_jinja_task,1621,4,5,solo,False,False,True,n/a,,,1,0,0,19,0.11735,104.4,0,124
+pillow_task,290,4,5,solo,False,False,True,n/a,,,1,0,0,53,0.18661,159.5,0,154
+typst_task,6554,7,8,solo,False,False,False,n/a,,,1,0,0,65,0.202622,356.0,0,0

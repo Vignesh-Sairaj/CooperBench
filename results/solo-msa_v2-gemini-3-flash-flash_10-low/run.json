@@ -1,0 +1,46 @@
+{
+  "run_name": "solo-msa_v2-gemini-3-flash-flash_10-low",
+  "setting": "solo",
+  "git_enabled": false,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3-flash-preview",
+  "subset": "flash_10",
+  "concurrency": 3,
+  "key_slot": 2,
+  "command": "cooperbench run -n solo-msa_v2-gemini-3-flash-flash_10-low -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3-flash-preview --agent-config configs/variants/thinking_low.yaml --setting solo -c 3 --backend docker",
+  "git_commit": "31f5ada582db5d2f1573f3ebabc70963516cdab3",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/thinking_low.yaml",
+  "agent_config": "# Variant config: thinking level \"low\" (the reference config uses high).\n# Used for the model and thinking-level comparison. Pass via:\n#   MODEL=<model> AGENT_CONFIG=configs/variants/thinking_low.yaml RUN_SUFFIX=low tools/run.sh ...\nagent:\n  cost_limit: 10.0\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 100,
+    "compaction_token_trigger": 28000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-01T13:22:36.727642",
+  "completed_at": "2026-11-01T13:35:23.758714",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/solo-msa_v2-gemini-3-flash-flash_10-low",
+  "headline": {
+    "pairs": 10,
+    "passed": 5,
+    "pass_rate": 0.5,
+    "merge_conflicts": 0,
+    "agents_at_step_limit": 1,
+    "agents_errored": 0,
+    "cost_usd": 1.8156,
+    "cost_per_pair_usd": 0.1816,
+    "wall_minutes": 12.8
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1202621,
+    "median_input_tokens_per_min": 412127,
+    "peak_calls_per_min": 78,
+    "total_retries": 26,
+    "rate_limit_retries": 26,
+    "server_busy_retries": 0
+  }
+}
