@@ -1,6 +1,6 @@
 # Model Config
 
-Every run uses the same setup, so differences in results come from the coordination method, not the model.
+Every run uses the same model setup, so differences in results come from the coordination method, not the model. This note covers that setup, how to launch it, and how many agents to run per API key.
 
 ## Reference Setup
 
@@ -26,7 +26,7 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | `coop --git` | `tools/run.sh coop flash_10 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
 | `team` | `tools/run.sh team flash_10 4` | `team-msa_v2-gemini-3-8-flash-flash_10` |
 
-**May still change:** the compaction threshold and the step budget are under test on `flash_10` via `configs/variants/` (see [harness_limits.md](harness_limits.md) and [tasks.md](tasks.md)). If either changes, it goes into the reference agent config and every baseline is rerun.
+**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. We have proposed 250 steps and 64K compaction for every setting ([baseline_ablation_flash10.md](baseline_ablation_flash10.md)); until the team agrees, runs with those budgets use `AGENT_CONFIG=configs/variants/steps250_compact64k.yaml`. If adopted, it goes into the reference agent config and every baseline is rerun.
 
 ## Settings and Reasons
 
@@ -36,14 +36,14 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | Model | `gemini-3.8-flash` | Fixed in our proposal. |
 | Thinking | `HIGH` | Best quality for multi-step coding and merging. Thoughts are saved in trajectories for failure analysis. |
 | Cost cap | `$10` per agent | Upstream's `$3` cap could stop `HIGH`-thinking agents early. |
-| Step limit | 100 per agent | Upstream default (250-step and budget-prompt variants under test). |
+| Step limit | 100 per agent | Upstream default. 250 steps with 64K compaction is proposed; see [baseline_ablation_flash10.md](baseline_ablation_flash10.md). |
 | Concurrency | `-c 8` (`solo`) or `-c 4` (`coop`, `team`) at 28K, one run per GCP project key | Keeps ~8 concurrent agents per 1M input-TPM project, leaving headroom for launch peaks; see [Concurrency](#concurrency). |
 
 Thinking and the cost cap are set in [`configs/gemini_3_8_flash_high.yaml`](../configs/gemini_3_8_flash_high.yaml).
 
-## How to Run
+## Running a Single Pair by Hand
 
-Pre-pull the task image, then always pass the config file. Leave out `-n` so the CLI names the run after its setting, model and task:
+For whole subsets, use `tools/run.sh` ([workflow.md](workflow.md)). To try one pair directly, pre-pull its task image and always pass the config file. Leave out `-n` so the CLI names the run after its setting, model, and task:
 
 ```bash
 docker pull akhatua/cooperbench-dottxt-ai-outlines:task1371
@@ -60,7 +60,7 @@ Use the same provider (`gemini/`, `vertex_ai/`, or `openrouter/`) for every run 
 
 ## Concurrency
 
-What limits us is the Gemini API's 1M input-tokens-per-minute (TPM) cap per key, not the machine (10 containers used load < 8 on 128 cores and ~34 GB RAM; RPM limit is 1K and RPD is unlimited).
+What limits us is the Gemini API's cap of 1M input tokens per minute (TPM), which applies per GCP project, not the machine (10 agent containers used a load under 8 on 128 cores and about 34 GB of RAM). The other limits, 1,000 requests per minute and unlimited requests per day, are never reached.
 
 ### Measured load per agent
 
@@ -70,7 +70,7 @@ Summing `prompt_tokens` per timestamp minute across trajectories reproduces AI S
 | :--- | ---: | ---: | ---: | ---: |
 | `solo` `flash_10`, 28K | 10 | 76K | 4.2 | 947.6K |
 | `coop --git` setup check, 28K, `HIGH` | 2 | 82K | 4.2 | 359.5K |
-| `solo` 3 pairs, 28K, no thought summaries | 3 | 90K | 5.3 | 444.3K |
+| `solo` 3 pairs, 28K, thought summaries off | 3 | 90K | 5.3 | 444.3K |
 | `solo` 3 pairs, 64K | 3 | 163K | 5.1 | 699.4K (2 overlapping agents) |
 | `coop --git` `flash_10` (100 and 250 steps), 28K (`-c 5`) | 10 | ~80K | ~4.2 | 986.3K / 1,046.2K |
 | `solo` `flash_10` (250 steps), 64K (`-c 4`) | 4 | ~160K | ~5.0 | 1,083.1K |
@@ -91,7 +91,7 @@ At 28K this gives 1M / (80K x 1.6) ≈ 8 agents; at 64K it gives 1M / (160K x 1.
 | 28K (reference) | `-c 8` | `-c 4` | 8 | 10 agents (`-c 10` / `-c 5`) logged 0 to 64 `429` retries per run |
 | 64K | `-c 4` | `-c 2` | 4 | 4 agents peaked at 1,083.1K tok/min with 1 `429` retry |
 
-Throttled calls retry with 4 to 60 second backoff (up to 10 attempts). In `solo` this only adds wall time: a retry happens inside one model call and does not use a step. In `coop` and `team`, a slowed agent can make its partner's `send_message --wait` time out, so retries can change outcomes there. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run. Runs before this change used `-c 10` (`solo`) and `-c 5` (`coop`) at 28K; see each run's `run.json` for its concurrency and retry counts. To run more agents at once, run separate experiments in parallel, each with a key from a different GCP project (`KEY_SLOT`, see [workflow.md](workflow.md)). Rate limits apply per project, not per key.
+Throttled calls retry with 4 to 60 second backoff (up to 10 attempts). In `solo` this only adds wall time: a retry happens inside one model call and does not use a step. In `coop` and `team`, a slowed agent can make its partner give up waiting for a reply, so retries can change outcomes there. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run. Runs before this change used `-c 10` (`solo`) and `-c 5` (`coop`) at 28K; see each run's `run.json` for its concurrency and retry counts. To run more agents at once, run separate experiments in parallel, each with a key from a different GCP project (`KEY_SLOT`, see [workflow.md](workflow.md)). Rate limits apply per project, not per key.
 
 ## Why the Config File Matters
 

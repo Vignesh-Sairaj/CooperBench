@@ -42,13 +42,14 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    tools/pull_images.sh flash_10
    ```
 
-2. **Run** with the [reference setup](model_config.md#reference-setup). `tools/run.sh` fills in the model, agent config, and backend, and names the run:
+2. **Run** with the [reference setup](model_config.md#reference-setup). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model, agent config, and backend, and names the run. Run 8 pairs at once for `solo` and 4 for `coop` and `team` (about 8 agents either way):
 
    ```bash
    tools/run.sh solo flash_10 8               # solo-msa_v2-gemini-3-8-flash-flash_10
    tools/run.sh coop flash_10 4 --git         # coop-msa_v2-git-gemini-3-8-flash-flash_10
-   RUN_SUFFIX=verifier tools/run.sh coop flash_10 4 --git --verifier    # intervention arm (--verifier is a future flag)
    ```
+
+   To try different budgets, pass a variant config and a name suffix, for example `RUN_SUFFIX=steps250-compact64k AGENT_CONFIG=configs/variants/steps250_compact64k.yaml tools/run.sh solo flash_10 4`. With 64K compaction each agent uses about twice the tokens, so halve the pairs at once.
 
    Run one benchmark at a time per GCP project key (see [Concurrency](model_config.md#concurrency)). A run over `flash_10` takes one to two hours. Grading runs automatically at the end.
 
@@ -64,7 +65,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
 
 3. **Watch it** (optional): `tail -f logs/<run_name>/console.log`, and `logs/<run_name>/resources.log` for load, memory, and container count.
 
-4. **Check for throttling:** `tools/run.sh` prints the model retry count at the end. If it is not zero, the Gemini rate limit slowed the agents; rerun at a lower `-c` or on a key from another GCP project before using the results.
+4. **Check for throttling:** `tools/run.sh` prints how many model calls were retried because of the Gemini rate limit (`429`) or a busy server (`5xx`). A few retries only slow agents down. Dozens of retries in `coop` or `team` can change results, because a slowed agent can make its partner give up waiting; next time run fewer pairs at once or use a key from another GCP project.
 
 Rerunning with the same name skips pairs that already have results; add `--force` to `tools/run.sh` to redo them. To redo only the grading: `uv run --frozen cooperbench eval -n <run_name> --backend docker --force`.
 

@@ -5,7 +5,7 @@ Every paper table and report should be reproducible from `results/` in Git alone
 ## Workflow
 
 ```bash
-tools/run.sh coop flash_10 5 --git                                   # run, with launch.json + console.log
+tools/run.sh coop flash_10 4 --git                                   # run, with launch.json + console.log
 uv run --frozen python tools/export_results.py <run_name>            # write results/<run_name>/
 uv run --frozen hf upload agent-coordination-lab/cooperbench-run-logs \
   logs/<run_name> <run_name> --repo-type dataset                     # archive raw logs
@@ -58,4 +58,4 @@ For example, in `coop`, `pairs.csv` can show a failed pair while `agents.csv` sh
 
 ## Comparing Runs
 
-Only compare runs that share the model config and concurrency (both are in `run.json`). Compare arms on the same pairs by joining `pairs.csv` files on the four pair columns, so paired tests (for example McNemar) can be used instead of comparing pass rates alone.
+Only compare runs that use the same model setup (in `run.json`), and check the retry counts in **Run Details**: heavy rate limiting can slow `coop` agents enough to change results. Compare runs on the same pairs by joining their `pairs.csv` files on the four pair columns. That allows a paired test, which looks only at the pairs where the two runs disagree, instead of comparing pass rates alone. With 10 pairs, a difference of 1 to 2 pairs is within run-to-run variation.
