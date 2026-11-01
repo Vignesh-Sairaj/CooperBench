@@ -14,4 +14,4 @@
 
 ## Benchmark Runs (`results/`)
 
-*(Export completed runs to `results/<run_name>/` with `summary.md` and `metrics.json`, and link each run in a row here.)*
+*(Export completed runs to `results/<run_name>/` and link each run in a row here.)*
