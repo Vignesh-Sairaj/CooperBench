@@ -13,7 +13,7 @@ We ran `solo` and `coop` on the 10-pair `flash_10` subset under different step l
 
 - **Settings:** `solo` is one agent implementing both features. `coop` is two agents, one feature each, who can message each other. `coop --git` adds a shared git remote where they can push and pull each other's branches.
 - **Step limit:** the maximum number of model responses per agent. The agent is then stopped, and only work it has pushed is graded. Upstream default: 100.
-- **Compaction:** once a request reaches this many tokens, the harness replaces older turns with a model-written summary and keeps only the last 2 turns verbatim. Upstream default: 28K (28,000 tokens). This is a trigger, not the model's context limit: Gemini 3.8 Flash accepts up to 1M tokens, and right after a compaction the context is back to roughly 10K to 15K.
+- **Compaction:** once a request reaches this many tokens, the harness replaces older turns with a model-written summary and keeps only the last 2 turns verbatim. Upstream default: 28K (28,000 tokens). In effect this is a soft context budget set by the harness, far below the model's own 1M-token limit. It is soft because the check runs after each call, so one large command output can push a single request well past it (we saw up to 185K at a 64K threshold). Right after a compaction the context is back to roughly 10K to 15K.
 - **Passed:** both features' hidden tests pass (in `coop`, after merging the two agents' patches).
 - **Subset:** `flash_10` is 10 hand-picked feature pairs from 9 repos, used for cheap screening.
 
