@@ -9,6 +9,7 @@ The upstream harness (`mini_swe_agent_v2`) runs agents on much tighter budgets t
 - **What real coding agents do:** they compact much later, roughly when the model's context is half full or nearly full. Gemini CLI's default is half of the model's input limit (about 500K tokens for a 1M model), and Claude Code compacts close to the model's full window (around 200K).
 - **What we saw:** in the first `solo` baseline on `flash_10` with `HIGH` thinking, agents compacted 5 to 12 times in 100 steps (22 times in the one passing pair; note an earlier export doubled these counts by counting both solver and summarizer trajectory segments), and spent steps re-reading files after each compaction. 9 of 10 agents ran out of steps before pushing their work.
 - **Why so often:** right after a compaction the context is already 10K to 15K tokens (system prompt, task, summary, and the last 2 turns), and it grows by 1K to 2K tokens per step.
+- **It is a soft budget, not a hard window:** the size check runs after each call, so the request that crosses the threshold is still sent in full. One command that prints a lot can push a single request far past the threshold. With compaction at 64K, `solo` agents on `dspy_task/8394` and `pallets_jinja_task/1559` sent requests of up to about 185K tokens after printing very large command outputs.
 
 ## Diagnostic Checks: Thought Summaries and 64K Compaction
 
