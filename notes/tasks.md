@@ -7,7 +7,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Task | Owner | Details |
 | :--- | :--- | :--- |
 | Check `coop` and `team` at `-c 10` for throttling | | First `coop` or `team` run at `-c 10` (20 agents): check its retry count. See [Concurrency Probe](#concurrency-probe). |
-| Pre-pull the `flash_10` task images | | Done locally; each teammate needs to pull them on their own machine. |
+| Pre-pull the `flash_10` task images | | Each teammate on their own machine: `tools/pull_images.sh flash_10`. |
 | Run the four baselines on `flash_10` | | `solo`, `coop`, `coop --git`, `team` with the [reference setup](model_config.md#reference-setup). Gates which interventions we build. A first `solo` run passed 1/10; on hold until the compaction and step-budget tests settle the reference setup. |
 | Review the `results/` format | | Drafted in [results_format.md](results_format.md), with [`tools/run.sh`](../tools/run.sh) and [`tools/export_results.py`](../tools/export_results.py). Everyone: comment before we export the baselines. |
 | Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |

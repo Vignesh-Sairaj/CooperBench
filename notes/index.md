@@ -4,6 +4,7 @@
 
 | Note | Summary | Updated |
 | :--- | :--- | :--- |
+| [workflow.md](workflow.md) | Start here: one-time setup, then how to run a benchmark, export results, archive logs, and commit. | 2026-10-31 |
 | [tasks.md](tasks.md) | Open and finished tasks with owners, including the concurrency probe. | 2026-10-31 |
 | [model_config.md](model_config.md) | Default harness, model, `HIGH` thinking, `$10` cost cap, and why every run needs the config file. | 2026-10-31 |
 | [logs_archive.md](logs_archive.md) | How to access, upload, and download raw run logs in our private Hugging Face dataset. | 2026-10-31 |

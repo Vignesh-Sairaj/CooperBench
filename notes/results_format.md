@@ -11,7 +11,7 @@ uv run --frozen hf upload agent-coordination-lab/cooperbench-run-logs \
   logs/<run_name> <run_name> --repo-type dataset                     # archive raw logs
 ```
 
-Then add a row for the run in [index.md](index.md) and write a few lines under **Observations** in its `summary.md`.
+Then add a row for the run in [index.md](index.md) and write a few lines under **Observations** in its `summary.md`. The full sequence, including setup and pre-pulling images, is in [workflow.md](workflow.md).
 
 ## Run Names
 
