@@ -1,4 +1,8 @@
 # Variant config: append a facts-only 100-step budget notice to solo.yaml's instance_template.
+# Kept only to reproduce the solo-...-budgetprompt run (0/10). Config merging replaces strings
+# whole, so this file has to copy the entire upstream task prompt to add one paragraph, and it
+# silently goes stale if upstream edits that prompt. For new prompt changes, add an opt-in
+# agent flag in Python instead (see agent.step_counter and configs/variants/stepcounter.yaml).
 # Pass via: AGENT_CONFIG=configs/variants/budgetprompt.yaml RUN_SUFFIX=budgetprompt tools/run.sh solo ...
 agent:
   cost_limit: 10.0

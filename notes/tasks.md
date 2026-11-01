@@ -9,7 +9,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Pre-pull the `flash_10` task images | | Each teammate on their own machine: `tools/pull_images.sh flash_10`. |
 | Finish the four baseline settings on `flash_10` | | `solo`, `coop`, and `coop --git` are done ([runs.md](runs.md)). `team` with 250 steps is running. |
 | Decide the step limit and compaction for all experiments | | Proposed: 250 steps and 64K compaction for every setting, because upstream's 100 steps and 28K stop most agents before they submit. See [baseline_ablation_flash10.md](baseline_ablation_flash10.md). Needs team agreement. |
-| Test a visible step counter | | Show the current step number on every turn and check whether agents submit in time at 100 steps. Telling the limit only in the task prompt scored 0/10. Needs only a config change. |
+| Test a visible step counter | | Implemented as an opt-in agent flag that adds "Step n of N: k left" to every turn (`configs/variants/stepcounter.yaml`). Next: run `solo` at 100 steps with it and compare with 0/10 for the limit stated only in the task prompt. |
 | Repeat the key comparisons on more pairs | | `solo` vs. `coop` is a tie on 10 pairs. Rerun the best settings on the 50-pair `flash` subset before drawing conclusions. |
 | Review the `results/` format | | See [results_format.md](results_format.md), [`tools/run.sh`](../tools/run.sh), and [`tools/export_results.py`](../tools/export_results.py). Nine `flash_10` runs are under `results/`. |
 | Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |

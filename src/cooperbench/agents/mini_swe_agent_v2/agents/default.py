@@ -30,6 +30,9 @@ class AgentConfig(BaseModel):
     """Template for the first user message specifying the task (the second message overall)."""
     step_limit: int = 0
     """Maximum number of steps the agent can take."""
+    step_counter: bool = False
+    """Append the current step number and the step limit to every observation, so the agent
+    can see how many steps it has left. Off by default (upstream behavior)."""
     cost_limit: float = 3.0
     """Stop agent after exceeding (!) this cost."""
     output_path: Path | None = None
@@ -195,7 +198,7 @@ class DefaultAgent:
                 try:
                     self.step()
                 except InterruptAgentFlow as e:
-                    self.add_messages(*e.messages)
+                    self.add_messages(*self._with_step_counter(list(e.messages)))
                 except Exception as e:
                     self.handle_uncaught_exception(e)
                     raise
@@ -461,7 +464,28 @@ class DefaultAgent:
                     continue
 
             outputs.append(self.env.execute(action))
-        return self.add_messages(*self.model.format_observation_messages(message, outputs, self.get_template_vars()))
+        observations = self.model.format_observation_messages(message, outputs, self.get_template_vars())
+        return self.add_messages(*self._with_step_counter(list(observations)))
+
+    def _with_step_counter(self, messages: list[dict]) -> list[dict]:
+        """Append "Step n of N" to the last observation of a turn when ``step_counter`` is on.
+
+        The step limit alone is not actionable: compaction drops the history the agent could
+        count turns from, so it cannot tell step 12 from step 95. Showing the count on every
+        turn keeps it visible in the last turns that compaction always keeps.
+        """
+        if not (self.config.step_counter and self.config.step_limit > 0) or not messages:
+            return messages
+        last = messages[-1]
+        if last.get("role") == "exit" or not isinstance(last.get("content"), str):
+            return messages
+        left = max(self.config.step_limit - self.n_calls, 0)
+        note = (
+            f"[Step {self.n_calls} of {self.config.step_limit}: {left} left. When no steps are left you "
+            "are stopped, and only work you have pushed and submitted is graded.]"
+        )
+        messages[-1] = {**last, "content": f"{last['content']}\n\n{note}"}
+        return messages
 
     def _announce_departed_peers(self) -> None:
         """Tell the agent, once, when a peer has finished and left.
