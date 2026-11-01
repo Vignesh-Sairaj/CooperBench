@@ -1,0 +1,14 @@
+# Variant config: 250 steps, compaction at 64K tokens, and "Step n of N: k left" on every turn.
+# Pass via: AGENT_CONFIG=configs/variants/steps250_compact64k_stepcounter.yaml RUN_SUFFIX=steps250-compact64k-stepcounter tools/run.sh solo ...
+agent:
+  cost_limit: 10.0
+  step_limit: 250
+  compaction_token_trigger: 64000
+  step_counter: true
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true
