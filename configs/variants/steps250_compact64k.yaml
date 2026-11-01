@@ -1,0 +1,13 @@
+# Variant config: raise per-agent step limit to 250 and context compaction trigger to 64K tokens.
+# Pass via: AGENT_CONFIG=configs/variants/steps250_compact64k.yaml RUN_SUFFIX=steps250-compact64k tools/run.sh ...
+agent:
+  cost_limit: 10.0
+  step_limit: 250
+  compaction_token_trigger: 64000
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true

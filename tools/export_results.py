@@ -4,10 +4,11 @@
 Usage:
     uv run --frozen python tools/export_results.py <run_name> [--logs-dir logs] [--results-dir results]
 
-Reads logs/<run_name>/ (config.json, summary.json, launch.json if present, and
-each pair's result.json / eval.json / trajectories) and writes:
+Reads logs/<run_name>/ (config.json, summary.json, launch.json if present,
+console.log if present, and each pair's result.json / eval.json / trajectories)
+and writes:
 
-    results/<run_name>/run.json     how the run was launched, plus headline numbers
+    results/<run_name>/run.json     how the run was launched, headline numbers, and API load
     results/<run_name>/pairs.csv    one row per task pair
     results/<run_name>/agents.csv   one row per agent per pair
     results/<run_name>/summary.md   generated numbers; the "Observations" section is kept on re-export
@@ -20,11 +21,20 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
+import statistics
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 HF_LOGS_REPO = "agent-coordination-lab/cooperbench-run-logs"
 OBSERVATIONS_HEADER = "## Observations"
+
+RATE_LIMIT_RE = re.compile(r"^Retrying .*RateLimitError", re.IGNORECASE)
+SERVER_BUSY_RE = re.compile(
+    r"^Retrying .*(ServiceUnavailableError|InternalServerError|BadGatewayError|GatewayTimeoutError)",
+    re.IGNORECASE,
+)
 
 PAIR_FIELDS = [
     "repo",
@@ -74,26 +84,102 @@ def load_json(path: Path) -> dict | None:
         return json.load(f)
 
 
+def resolve_traj_path(pair_dir: Path, agent_id: str, feature_id: int | None) -> Path:
+    """Prefer *_full_traj.json (written on >=1 compaction); fall back to *_traj.json."""
+    full_name = "solo_full_traj.json" if agent_id == "solo" else f"{agent_id}_full_traj.json"
+    full_path = pair_dir / full_name
+    if full_path.exists():
+        return full_path
+    if agent_id == "solo":
+        return pair_dir / "solo_traj.json"
+    if feature_id is not None and (pair_dir / f"agent{feature_id}_traj.json").exists():
+        return pair_dir / f"agent{feature_id}_traj.json"
+    return pair_dir / f"{agent_id}_traj.json"
+
+
 def trajectory_stats(path: Path) -> dict:
-    """Count model calls, reasoning tokens, and compactions in a full trajectory."""
+    """Count solver calls, reasoning tokens, and compactions in an agent trajectory."""
     traj = load_json(path)
     if traj is None:
         return {"model_calls": "", "reasoning_tokens": "", "compactions": ""}
     segments = traj.get("segments") or []
-    messages = [m for s in segments for m in s.get("messages", [])] or traj.get("messages", [])
+    if segments:
+        compactions = sum(s.get("kind") == "summarizer" for s in segments)
+        solver_msgs = [m for s in segments if s.get("kind") != "summarizer" for m in s.get("messages", [])]
+    else:
+        solver_msgs = traj.get("messages") or []
+        compactions = sum(bool((m.get("extra") or {}).get("summary")) for m in solver_msgs)
+
     calls = 0
     reasoning = 0
-    for m in messages:
-        response = (m.get("extra") or {}).get("response")
-        if not response or (m.get("extra") or {}).get("summary"):
+    seen: set[object] = set()
+    for m in solver_msgs:
+        extra = m.get("extra") or {}
+        response = extra.get("response")
+        if not response or extra.get("summary"):
             continue
+        rid = response.get("id") or extra.get("timestamp") or id(m)
+        if rid in seen:
+            continue
+        seen.add(rid)
         calls += 1
         details = (response.get("usage") or {}).get("completion_tokens_details") or {}
         reasoning += details.get("reasoning_tokens") or 0
     return {
         "model_calls": calls,
         "reasoning_tokens": reasoning,
-        "compactions": max(len(segments) - 1, 0),
+        "compactions": compactions,
+    }
+
+
+def compute_load(run_dir: Path, traj_paths: list[Path]) -> dict:
+    """Compute per-minute input token and call load plus retry counts from console.log."""
+    tokens_per_min: dict[int, int] = defaultdict(int)
+    calls_per_min: dict[int, int] = defaultdict(int)
+    seen: set[object] = set()
+
+    for path in traj_paths:
+        traj = load_json(path)
+        if traj is None:
+            continue
+        segments = traj.get("segments") or []
+        messages = [m for s in segments for m in s.get("messages", [])] or traj.get("messages") or []
+        for m in messages:
+            extra = m.get("extra") or {}
+            response = extra.get("response")
+            ts = extra.get("timestamp")
+            if not response or not ts:
+                continue
+            rid = response.get("id") or (str(path), ts)
+            if rid in seen:
+                continue
+            seen.add(rid)
+            bucket = int(ts // 60)
+            tokens_per_min[bucket] += (response.get("usage") or {}).get("prompt_tokens") or 0
+            calls_per_min[bucket] += 1
+
+    total_retries = 0
+    rate_limit_retries = 0
+    server_busy_retries = 0
+    console = run_dir / "console.log"
+    if console.exists():
+        for line in console.read_text(errors="replace").splitlines():
+            if line.startswith("Retrying "):
+                total_retries += 1
+                if RATE_LIMIT_RE.search(line):
+                    rate_limit_retries += 1
+                elif SERVER_BUSY_RE.search(line):
+                    server_busy_retries += 1
+
+    tok_vals = list(tokens_per_min.values())
+    call_vals = list(calls_per_min.values())
+    return {
+        "peak_input_tokens_per_min": max(tok_vals) if tok_vals else 0,
+        "median_input_tokens_per_min": int(statistics.median(tok_vals)) if tok_vals else 0,
+        "peak_calls_per_min": max(call_vals) if call_vals else 0,
+        "total_retries": total_retries,
+        "rate_limit_retries": rate_limit_retries,
+        "server_busy_retries": server_busy_retries,
     }
 
 
@@ -106,7 +192,7 @@ def agents_from_result(result: dict) -> dict[str, dict]:
     return {}
 
 
-def export_pair(pair_dir: Path, setting: str) -> tuple[dict, list[dict]] | None:
+def export_pair(pair_dir: Path, setting: str) -> tuple[dict, list[dict], list[Path]] | None:
     result = load_json(pair_dir / "result.json")
     if result is None:
         return None
@@ -118,9 +204,12 @@ def export_pair(pair_dir: Path, setting: str) -> tuple[dict, list[dict]] | None:
 
     agents = agents_from_result(result)
     agent_rows = []
+    traj_paths = []
     for agent_id, a in agents.items():
-        traj_name = f"{agent_id}_full_traj.json" if agent_id != "solo" else "solo_full_traj.json"
-        stats = trajectory_stats(pair_dir / traj_name)
+        fid = a.get("feature_id")
+        traj_path = resolve_traj_path(pair_dir, agent_id, fid)
+        traj_paths.append(traj_path)
+        stats = trajectory_stats(traj_path)
         if setting == "team":
             role = a.get("team_role") or ("lead" if agent_id == lead else "member")
         elif setting == "solo":
@@ -134,7 +223,7 @@ def export_pair(pair_dir: Path, setting: str) -> tuple[dict, list[dict]] | None:
                 "feature_a": fa,
                 "feature_b": fb,
                 "agent_id": agent_id,
-                "feature_id": a.get("feature_id") if a.get("feature_id") is not None else "",
+                "feature_id": fid if fid is not None else "",
                 "role": role,
                 "status": a.get("status"),
                 "steps": a.get("steps", 0),
@@ -166,7 +255,7 @@ def export_pair(pair_dir: Path, setting: str) -> tuple[dict, list[dict]] | None:
         "messages_sent": result.get("messages_sent", 0),
         "patch_lines_total": sum(r["patch_lines"] or 0 for r in agent_rows),
     }
-    return pair_row, agent_rows
+    return pair_row, agent_rows, traj_paths
 
 
 def write_csv(path: Path, fields: list[str], rows: list[dict]) -> None:
@@ -178,6 +267,7 @@ def write_csv(path: Path, fields: list[str], rows: list[dict]) -> None:
 
 def render_summary(run: dict, pairs: list[dict], observations: str) -> str:
     h = run["headline"]
+    load = run["load"]
     lines = [
         f"# {run['run_name']}",
         "",
@@ -196,6 +286,14 @@ def render_summary(run: dict, pairs: list[dict], observations: str) -> str:
         f"| Agent errors | {h['agents_errored']} |",
         f"| Cost | `${h['cost_usd']:.2f}` (`${h['cost_per_pair_usd']:.2f}` per pair) |",
         f"| Wall time | {h['wall_minutes']:.0f} min |",
+        (
+            f"| Peak input load | {load['peak_input_tokens_per_min']:,} tok/min "
+            f"({load['peak_calls_per_min']} calls/min, median {load['median_input_tokens_per_min']:,}) |"
+        ),
+        (
+            f"| Model retries | {load['rate_limit_retries']} rate-limit (429), "
+            f"{load['server_busy_retries']} server-busy (5xx), {load['total_retries']} total |"
+        ),
         "",
         "## Pairs",
         "",
@@ -232,17 +330,20 @@ def main() -> int:
 
     pairs: list[dict] = []
     agents: list[dict] = []
+    traj_paths: list[Path] = []
     for result_file in sorted(run_dir.glob("*/*/*/*/result.json")):
         exported = export_pair(result_file.parent, setting)
         if exported:
             pairs.append(exported[0])
             agents.extend(exported[1])
+            traj_paths.extend(exported[2])
     if not pairs:
         print(f"error: no result.json files under {run_dir}", file=sys.stderr)
         return 1
 
     passed = sum(p["both_passed"] for p in pairs)
     cost = sum(p["cost_usd"] for p in pairs)
+    load = compute_load(run_dir, traj_paths)
     run = {
         "run_name": args.run_name,
         "setting": setting,
@@ -271,6 +372,7 @@ def main() -> int:
             "cost_per_pair_usd": round(cost / len(pairs), 4),
             "wall_minutes": round((summary.get("total_time_seconds") or 0) / 60, 1),
         },
+        "load": load,
     }
 
     out = Path(args.results_dir) / args.run_name

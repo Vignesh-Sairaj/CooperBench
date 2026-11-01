@@ -1,0 +1,133 @@
+# Variant config: append a facts-only 100-step budget notice to solo.yaml's instance_template.
+# Pass via: AGENT_CONFIG=configs/variants/budgetprompt.yaml RUN_SUFFIX=budgetprompt tools/run.sh solo ...
+agent:
+  cost_limit: 10.0
+  instance_template: |
+    ## Your Task
+
+    {{task}}
+
+    ## Recommended Workflow
+
+    This workflow should be done step-by-step so that you can iterate on your changes and any possible problems.
+
+    1. Analyze the codebase by finding and reading relevant files
+    2. Create a script to reproduce the issue
+    3. Edit the source code to resolve the issue
+    4. Verify your fix works by running your script again
+    5. Test edge cases to ensure your fix is robust
+    6. Submit your changes — see the **Submission** section below for the exact procedure.
+
+    ## Command Execution Rules
+
+    You are operating in an environment where
+
+    1. You issue at least one command
+    2. The system executes the command(s) in a subshell
+    3. You see the result(s)
+    4. You write your next command(s)
+
+    Each response should include:
+
+    1. **Reasoning text** where you explain your analysis and plan
+    2. At least one tool call with your command
+
+    **CRITICAL REQUIREMENTS:**
+
+    - Your response SHOULD include reasoning text explaining what you're doing
+    - Your response MUST include AT LEAST ONE bash tool call
+    - Directory or environment variable changes are not persistent. Every action is executed in a new subshell.
+    - However, you can prefix any action with `MY_ENV_VAR=MY_VALUE cd /path/to/working/dir && ...` or write/load environment variables from files
+    - To submit your work, follow the **Submission** section below (`echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`).
+
+    Example of a CORRECT response:
+    <example_response>
+    I need to understand the structure of the repository first. Let me check what files are in the current directory to get a better understanding of the codebase.
+
+    [Makes bash tool call with {"command": "ls -la"} as arguments]
+    </example_response>
+
+    <system_information>
+    {{system}} {{release}} {{version}} {{machine}}
+    </system_information>
+
+    ## Useful command examples
+
+    ### Create a new file:
+
+    ```bash
+    cat <<'EOF' > newfile.py
+    import numpy as np
+    hello = "world"
+    print(hello)
+    EOF
+    ```
+
+    ### Edit files with sed:
+
+    {%- if system == "Darwin" -%}
+    <important>
+    You are on MacOS. For all the below examples, you need to use `sed -i ''` instead of `sed -i`.
+    </important>
+    {%- endif -%}
+
+    ```bash
+    # Replace all occurrences
+    sed -i 's/old_string/new_string/g' filename.py
+
+    # Replace only first occurrence
+    sed -i 's/old_string/new_string/' filename.py
+
+    # Replace first occurrence on line 1
+    sed -i '1s/old_string/new_string/' filename.py
+
+    # Replace all occurrences in lines 1-10
+    sed -i '1,10s/old_string/new_string/g' filename.py
+    ```
+
+    ### View file content:
+
+    ```bash
+    # View specific lines with numbers
+    nl -ba filename.py | sed -n '10,20p'
+    ```
+
+    ### Any other command you want to run
+
+    ```bash
+    anything
+    ```
+
+    ## Submission
+
+    Your pull request is your submission.
+
+    ```bash
+    git add <only the changes you want to submit>
+    git commit -m "<what you did>"
+    git push
+    gh pr create --title "..." --body "..."
+    ```
+
+    End the task (EXACT command required):
+
+    ```bash
+    echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
+    ```
+
+    <CRITICAL>
+    Do NOT run `rm -rf .git`, `git init`, `git rm -rf .`, or `git reset --hard`
+    inside `/workspace/repo` — these corrupt `.git/` and your patch will be
+    unapplyable.
+    </CRITICAL>
+
+    ## Step Budget
+
+    You have at most 100 steps. Each response you send counts as one step, including responses without a command. When you reach the limit you are stopped, and only work you have pushed and submitted as described in the **Submission** section counts.
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true

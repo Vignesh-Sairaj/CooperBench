@@ -38,8 +38,8 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
 
    ```bash
    tools/run.sh solo flash_10 10              # solo-msa_v2-gemini-3-8-flash-flash_10
-   tools/run.sh coop flash_10 10 --git        # coop-msa_v2-git-gemini-3-8-flash-flash_10
-   RUN_SUFFIX=verifier tools/run.sh coop flash_10 10 --git --verifier   # intervention arm (--verifier is a future flag)
+   tools/run.sh coop flash_10 5 --git         # coop-msa_v2-git-gemini-3-8-flash-flash_10
+   RUN_SUFFIX=verifier tools/run.sh coop flash_10 5 --git --verifier    # intervention arm (--verifier is a future flag)
    ```
 
    Run one benchmark at a time per API key (see [Concurrency](model_config.md#concurrency)). A run over `flash_10` takes about an hour. Grading runs automatically at the end.

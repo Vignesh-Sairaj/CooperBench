@@ -4,10 +4,11 @@
 # Usage:
 #   tools/run.sh <setting> <subset> <concurrency> [extra cooperbench run args...]
 #   tools/run.sh solo flash_10 10
-#   tools/run.sh coop flash_10 10 --git
+#   tools/run.sh coop flash_10 5 --git
 #
 # The run name is the CLI's own auto-generated name. To add a method suffix for an
-# intervention arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
+# intervention or variant arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
+# Set AGENT_CONFIG to override the default config (configs/gemini_3_8_flash_high.yaml).
 #
 # Writes into logs/<run_name>/:
 #   launch.json     command, git commit, agent config, package versions, concurrency
@@ -28,7 +29,7 @@ EXTRA=("$@")
 UV_RUN="${UV_RUN:-uv run --frozen}"
 MODEL="gemini/gemini-3.8-flash"
 AGENT="mini_swe_agent_v2"
-CONFIG="configs/gemini_3_8_flash_high.yaml"
+CONFIG="${AGENT_CONFIG:-configs/gemini_3_8_flash_high.yaml}"
 
 GIT_ENABLED=False
 for a in "${EXTRA[@]}"; do [[ "$a" == "--git" ]] && GIT_ENABLED=True; done
@@ -74,5 +75,7 @@ trap 'kill $SAMPLER 2>/dev/null || true' EXIT
 
 echo "run: $RUN_NAME"
 $UV_RUN "${CMD[@]}" 2>&1 | tee "$RUN_DIR/console.log"
-echo "model retry warnings: $(grep -ciE 'retrying|ratelimiterror|rate.?limit|resource.?exhausted|\b429\b' "$RUN_DIR/console.log" || true)"
+echo "rate-limit retries (429): $(grep -ciE '^Retrying .*RateLimitError' "$RUN_DIR/console.log" || true)"
+echo "server-busy retries (5xx): $(grep -ciE '^Retrying .*(ServiceUnavailableError|InternalServerError|BadGatewayError|GatewayTimeoutError)' "$RUN_DIR/console.log" || true)"
+echo "total model retries: $(grep -c '^Retrying ' "$RUN_DIR/console.log" || true)"
 echo "next: $UV_RUN python tools/export_results.py $RUN_NAME"

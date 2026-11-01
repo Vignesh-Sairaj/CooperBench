@@ -1,0 +1,12 @@
+# Variant config: raise per-agent step limit from 100 to 250.
+# Pass via: AGENT_CONFIG=configs/variants/steps250.yaml RUN_SUFFIX=steps250 tools/run.sh ...
+agent:
+  cost_limit: 10.0
+  step_limit: 250
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true

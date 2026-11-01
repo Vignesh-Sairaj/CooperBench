@@ -5,7 +5,7 @@ Every paper table and report should be reproducible from `results/` in Git alone
 ## Workflow
 
 ```bash
-tools/run.sh coop flash_10 10 --git                                  # run, with launch.json + console.log
+tools/run.sh coop flash_10 5 --git                                   # run, with launch.json + console.log
 uv run --frozen python tools/export_results.py <run_name>            # write results/<run_name>/
 uv run --frozen hf upload agent-coordination-lab/cooperbench-run-logs \
   logs/<run_name> <run_name> --repo-type dataset                     # archive raw logs
@@ -23,7 +23,7 @@ Then add a row for the run in [index.md](index.md) and write a few lines under *
 
 | File | Contents |
 | :--- | :--- |
-| `run.json` | How the run was launched (command, commit, agent config, versions, concurrency), a link to the raw logs, and headline numbers. |
+| `run.json` | How the run was launched (command, commit, agent config, versions, concurrency), a link to the raw logs, `headline` metrics, and `load` stats (`peak_input_tokens_per_min`, `median_input_tokens_per_min`, `peak_calls_per_min`, `total_retries`, `rate_limit_retries`, `server_busy_retries`). |
 | `pairs.csv` | One row per task pair. This is the data behind every table and statistical test. |
 | `agents.csv` | One row per agent per pair, for step, cost, and failure analysis. |
 | `summary.md` | Generated numbers and a pairs table, plus a hand-written **Observations** section that survives re-export. |
