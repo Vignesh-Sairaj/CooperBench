@@ -22,9 +22,15 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    ```bash
    GEMINI_API_KEY=...   # AI Studio key for gemini/gemini-3.8-flash
    HF_TOKEN=hf_...      # for the raw logs archive, see logs_archive.md
+
+   # Optional, for parallel runs (KEY_SLOT=<n> picks GEMINI_API_KEY_<n>).
+   # Use one key per GCP project: rate limits apply per project, not per key.
+   GEMINI_API_KEY_1=... # project 1 (can be the same key as GEMINI_API_KEY)
+   GEMINI_API_KEY_2=... # project 2
+   GEMINI_API_KEY_3=... # project 3
    ```
 
-   To run experiments in parallel, add one key per GCP project as `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on. Rate limits apply per project, so two keys from the same project share one limit.
+   With only `GEMINI_API_KEY`, runs go one at a time. Add `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on (one per GCP project) to run different experiments in parallel; see step 2 under [Run a Benchmark](#run-a-benchmark).
 
 5. **Raw logs archive:** join the Hugging Face organization and create your token, as described in [logs_archive.md](logs_archive.md).
 
