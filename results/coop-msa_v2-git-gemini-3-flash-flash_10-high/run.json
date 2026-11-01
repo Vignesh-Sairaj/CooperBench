@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-flash-flash_10-high",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3-flash-preview",
+  "subset": "flash_10",
+  "concurrency": 3,
+  "key_slot": 1,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-flash-flash_10-high -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3-flash-preview --agent-config configs/gemini_3_8_flash_high.yaml --setting coop -c 3 --backend docker --git",
+  "git_commit": "da2491e3e1b2cede6eaaa6c0df5793e813c649e8",
+  "git_dirty": false,
+  "agent_config_path": "configs/gemini_3_8_flash_high.yaml",
+  "agent_config": "# Shared CooperBench agent config override for runs on Gemini 3.8 Flash.\n# Pass via: --agent-config configs/gemini_3_8_flash_high.yaml\n# Deep-merged onto coop.yaml (multi-agent) or solo.yaml (single-agent) by MiniSweAgentV2Runner.\nagent:\n  cost_limit: 10.0\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 100,
+    "compaction_token_trigger": 28000,
+    "thinking_level": "high"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-01T14:23:27.284851",
+  "completed_at": "2026-11-01T15:04:02.736669",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-flash-flash_10-high",
+  "headline": {
+    "pairs": 10,
+    "passed": 4,
+    "pass_rate": 0.4,
+    "merge_conflicts": 3,
+    "agents_at_step_limit": 4,
+    "agents_errored": 1,
+    "cost_usd": 5.9781,
+    "cost_per_pair_usd": 0.5978,
+    "wall_minutes": 40.6
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1220472,
+    "median_input_tokens_per_min": 551769,
+    "peak_calls_per_min": 75,
+    "total_retries": 70,
+    "rate_limit_retries": 61,
+    "server_busy_retries": 0
+  }
+}

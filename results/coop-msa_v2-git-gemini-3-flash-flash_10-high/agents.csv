@@ -1,0 +1,56 @@
+repo,task_id,feature_a,feature_b,agent_id,feature_id,role,status,steps,cost_usd,patch_lines,model_calls,reasoning_tokens,compactions,error
+dottxt_ai_outlines_task,1655,7,10,agent2,10,peer,Submitted,55,0.211669,12,55,5251,1,
+dottxt_ai_outlines_task,1655,7,10,agent1,7,peer,Submitted,39,0.16326,17,37,5723,0,
+dspy_task,8394,3,4,agent1,3,peer,Submitted,39,0.353677,134,39,67717,1,
+dspy_task,8394,3,4,agent2,4,peer,LimitsExceeded,100,0.49819,199,100,35059,4,
+go_chi_task,26,1,2,agent1,1,peer,Submitted,56,0.212525,105,56,7369,2,
+go_chi_task,26,1,2,agent2,2,peer,Submitted,52,0.440441,152,51,81206,1,
+huggingface_datasets_task,6252,4,6,agent1,4,peer,Submitted,36,0.130861,80,36,2533,0,
+huggingface_datasets_task,6252,4,6,agent2,6,peer,Error,42,0.193713,13,41,13999,1,"litellm.APIConnectionError: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+Traceback (most recent call last):
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/main.py"", line 3338, in completion
+    response = vertex_chat_completion.completion(  # type: ignore
+        model=model,
+    ...<17 lines>...
+        extra_headers=headers,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py"", line 2766, in completion
+    data = sync_transform_request_body(
+        **transform_request_params,
+    ...<2 lines>...
+        vertex_auth_header=auth_header,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 683, in sync_transform_request_body
+    return _transform_request_body(
+        messages=messages,
+    ...<4 lines>...
+        optional_params=optional_params,
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 636, in _transform_request_body
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 586, in _transform_request_body
+    content = litellm.GoogleAIStudioGeminiConfig()._transform_messages(
+        messages=messages, model=model
+    )
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/gemini/chat/transformation.py"", line 151, in _transform_messages
+    return _gemini_convert_messages_with_history(messages=messages, model=model)
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 529, in _gemini_convert_messages_with_history
+    raise e
+  File ""/usr/local/google/home/jkopanski/Stanford/cs329z/CooperBench/.venv/lib/python3.14/site-packages/litellm/llms/vertex_ai/gemini/transformation.py"", line 507, in _gemini_convert_messages_with_history
+    raise Exception(
+    ...<3 lines>...
+    )
+Exception: Invalid Message passed in - {'role': 'exit', 'content': ''}. File an issue https://github.com/BerriAI/litellm/issues
+"
+openai_tiktoken_task,0,6,8,agent2,8,peer,Submitted,51,0.173354,42,51,2262,1,
+openai_tiktoken_task,0,6,8,agent1,6,peer,Submitted,48,0.224048,146,48,5234,2,
+pallets_click_task,2800,1,7,agent1,1,peer,LimitsExceeded,100,0.394211,108,100,5156,2,
+pallets_click_task,2800,1,7,agent2,7,peer,LimitsExceeded,100,0.413038,85,100,17246,2,
+pallets_jinja_task,1559,4,8,agent2,8,peer,Submitted,51,0.271501,231,51,29091,2,
+pallets_jinja_task,1559,4,8,agent1,4,peer,Submitted,67,0.294102,166,66,12705,1,
+pallets_jinja_task,1621,4,5,agent1,4,peer,Submitted,46,0.172505,134,46,5280,1,
+pallets_jinja_task,1621,4,5,agent2,5,peer,Submitted,64,0.303067,160,64,20161,2,
+pillow_task,290,4,5,agent1,4,peer,Submitted,65,0.280381,90,64,16467,2,
+pillow_task,290,4,5,agent2,5,peer,Submitted,60,0.236461,103,60,7300,1,
+typst_task,6554,7,8,agent1,7,peer,LimitsExceeded,100,0.485086,132,100,29059,3,
+typst_task,6554,7,8,agent2,8,peer,Submitted,97,0.525987,163,96,52201,5,
