@@ -21,7 +21,7 @@ We re-ran 3 failed `solo` pairs (`pallets_click_task/2800`, `typst_task/6554`, `
 | `pallets_jinja_task/1559` | 12 | 11 | 4 | 100 | no | `$1.05` |
 
 - Turning off thought summaries barely changed compaction counts and lost readable reasoning traces, so we keep `includeThoughts: true`.
-- Raising `compaction_token_trigger` to `64000` cut compactions 1.4x to 3.5x while roughly doubling input token rate per agent (~163K vs. ~76K tok/min/agent, reducing safe concurrency from 10 agents to 4 per key; 1 transient `503` congestion retry, 0 `429` rate limits).
+- Raising `compaction_token_trigger` to `64000` cut compactions 1.4x to 3.5x while roughly doubling input token rate per agent (~163K vs. ~76K tok/min/agent, reducing safe concurrency from about 8 agents to 4 per key; 1 transient `503` congestion retry, 0 `429` rate limits).
 - **Neither change fixed the 0 submissions:** all 3 agents still ran all 100 steps without pushing.
 
 ## Unannounced 100-Step Limit and Publish-Only Grading

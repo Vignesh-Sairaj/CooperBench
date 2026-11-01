@@ -13,7 +13,7 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | Model and provider | `-m gemini/gemini-3.8-flash` (AI Studio key in `GEMINI_API_KEY`) |
 | Agent config | `--agent-config configs/gemini_3_8_flash_high.yaml` |
 | Step limit and compaction | Upstream defaults: 100 steps, compaction at 28K tokens |
-| Concurrency | About 10 agents per key: `-c 10` for `solo`, `-c 5` for `coop` and `team` |
+| Concurrency | About 8 agents per key at 28K: `-c 8` for `solo`, `-c 4` for `coop` and `team` |
 | Run name | Leave out `-n`; intervention arms add a suffix (see [results_format.md](results_format.md)) |
 | Subsets | `flash_10` for the baseline screen, `flash` for intervention arms |
 
@@ -21,10 +21,10 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 
 | Setting | Command | Run name |
 | :--- | :--- | :--- |
-| `solo` | `tools/run.sh solo flash_10 10` | `solo-msa_v2-gemini-3-8-flash-flash_10` |
-| `coop` | `tools/run.sh coop flash_10 5` | `coop-msa_v2-gemini-3-8-flash-flash_10` |
-| `coop --git` | `tools/run.sh coop flash_10 5 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
-| `team` | `tools/run.sh team flash_10 5` | `team-msa_v2-gemini-3-8-flash-flash_10` |
+| `solo` | `tools/run.sh solo flash_10 8` | `solo-msa_v2-gemini-3-8-flash-flash_10` |
+| `coop` | `tools/run.sh coop flash_10 4` | `coop-msa_v2-gemini-3-8-flash-flash_10` |
+| `coop --git` | `tools/run.sh coop flash_10 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
+| `team` | `tools/run.sh team flash_10 4` | `team-msa_v2-gemini-3-8-flash-flash_10` |
 
 **May still change:** the compaction threshold and the step budget are under test on `flash_10` via `configs/variants/` (see [harness_limits.md](harness_limits.md) and [tasks.md](tasks.md)). If either changes, it goes into the reference agent config and every baseline is rerun.
 
@@ -37,7 +37,7 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | Thinking | `HIGH` | Best quality for multi-step coding and merging. Thoughts are saved in trajectories for failure analysis. |
 | Cost cap | `$10` per agent | Upstream's `$3` cap could stop `HIGH`-thinking agents early. |
 | Step limit | 100 per agent | Upstream default (250-step and budget-prompt variants under test). |
-| Concurrency | `-c 10` (`solo`) or `-c 5` (`coop`, `team`), one run per key | Matches ~10 concurrent agents per 1M input-TPM key; see [Concurrency](#concurrency). |
+| Concurrency | `-c 8` (`solo`) or `-c 4` (`coop`, `team`) at 28K, one run per key | Keeps ~8 concurrent agents per 1M input-TPM key, leaving headroom for launch peaks; see [Concurrency](#concurrency). |
 
 Thinking and the cost cap are set in [`configs/gemini_3_8_flash_high.yaml`](../configs/gemini_3_8_flash_high.yaml).
 
@@ -76,20 +76,22 @@ Summing `prompt_tokens` per timestamp minute across trajectories reproduces AI S
 | `solo` `flash_10` (250 steps), 64K (`-c 4`) | 4 | ~160K | ~5.0 | 1,083.1K |
 
 - **`coop` agents are not lighter than `solo` agents** (82K vs. 76K tok/min/agent).
-- **Load peaks right after launch** (~1.25x average) when all agents read files at once:
+- **Load peaks right after launch**, when all agents read files at once, and the peak varies a lot between runs with the same agent count. Four `solo` runs at `-c 10` (10 agents, 28K) peaked at 947.6K, 1,043.2K, 1,183.1K, and 1,271.9K tok/min, with 0, 9, 41, and 64 `429` retries. Two `coop --git` runs at `-c 5` (also 10 agents) logged 7 and 6 `429` retries, and `coop` (no `--git`) at `-c 5` logged 48. The worst peak was about 1.6x the average load, so plan for that:
 
-$$\text{max agents} \approx \frac{\text{target peak}}{\text{avg tok/min per agent} \times 1.25}$$
+$$\text{max agents} \approx \frac{\text{1M tok/min}}{\text{avg tok/min per agent} \times 1.6}$$
+
+At 28K this gives 1M / (80K x 1.6) ≈ 8 agents; at 64K it gives 1M / (160K x 1.6) ≈ 4 agents.
 
 ### Recommended `-c` per API key
 
 `-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`). Keep the **concurrent agent count** equal across compared runs:
 
-| Compaction threshold | `solo` | `coop`, `coop --git`, `team` | Concurrent agents |
-| :--- | :---: | :---: | :---: |
-| 28K (reference) | `-c 10` | `-c 5` | 10 |
-| 64K | `-c 4` | `-c 2` | 4 |
+| Compaction threshold | `solo` | `coop`, `coop --git`, `team` | Concurrent agents | Measured |
+| :--- | :---: | :---: | :---: | :--- |
+| 28K (reference) | `-c 8` | `-c 4` | 8 | 10 agents (`-c 10` / `-c 5`) logged 0 to 64 `429` retries per run |
+| 64K | `-c 4` | `-c 2` | 4 | 4 agents peaked at 1,083.1K tok/min with 1 `429` retry |
 
-Throttled calls retry with 4 to 60 second backoff (up to 10 attempts), which slows agents and can make a partner's `send_message --wait` time out in `coop`. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run; if `coop` at `-c 5` logs `429` retries, drop to `-c 4`, or run separate experiments in parallel on separate teammates' API keys.
+Throttled calls retry with 4 to 60 second backoff (up to 10 attempts). In `solo` this only adds wall time: a retry happens inside one model call and does not use a step. In `coop` and `team`, a slowed agent can make its partner's `send_message --wait` time out, so retries can change outcomes there. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run. Runs before this change used `-c 10` (`solo`) and `-c 5` (`coop`) at 28K; see each run's `run.json` for its concurrency and retry counts. To run more agents at once, split experiments across separate teammates' API keys.
 
 ## Why the Config File Matters
 

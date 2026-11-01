@@ -6,7 +6,7 @@
 | :--- | :--- | :--- |
 | [workflow.md](workflow.md) | Start here: one-time setup, then how to run a benchmark, export results, archive logs, and commit. | 2026-10-31 |
 | [tasks.md](tasks.md) | Open and finished tasks with owners, including the concurrency model and step-budget tests. | 2026-10-31 |
-| [model_config.md](model_config.md) | Reference setup, `HIGH` thinking, `$10` cost cap, and the input-TPM concurrency table (`-c 10` `solo`, `-c 5` `coop`/`team`). | 2026-10-31 |
+| [model_config.md](model_config.md) | Reference setup, `HIGH` thinking, `$10` cost cap, and the input-TPM concurrency table (`-c 8` `solo`, `-c 4` `coop`/`team` at 28K). | 2026-11-01 |
 | [logs_archive.md](logs_archive.md) | How to access, upload, and download raw run logs in our private Hugging Face dataset. | 2026-10-31 |
 | [results_format.md](results_format.md) | Run naming, the files in `results/<run_name>/` (including `load` stats), every CSV column, and how to compare runs. | 2026-10-31 |
 | [harness_limits.md](harness_limits.md) | How 28K vs. 64K compaction, step limits, publish-only grading, and upstream timeout/clock bugs affect runs. | 2026-11-01 |

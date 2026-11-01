@@ -18,7 +18,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 
 **Question:** What is the highest `-c` we can run without losing agents to the 120-second `docker run` timeout or slowing down on Gemini API rate limits?
 
-**Finding:** The 1M input-tokens-per-minute (TPM) cap per API key sets the limit (~10 concurrent agents per key at 28K compaction, ~4 at 64K). Because `coop` agents average ~80K to 82K input tok/min/agent (similar to `solo`'s ~76K), use `-c 10` (`-c 8` for zero launch-burst `429` retries) for `solo` and `-c 5` for `coop` and `team` at 28K compaction, and `-c 4` (`solo`) and `-c 2` (`coop` and `team`) at 64K. Verified across 7 `flash_10` runs (`0` agent errors); see [model_config.md](model_config.md#concurrency) and [baseline_ablation_flash10.md](baseline_ablation_flash10.md).
+**Finding:** The 1M input-tokens-per-minute (TPM) cap per API key sets the limit, not the machine. Agents average ~76K to 82K input tok/min at 28K compaction (`coop` agents are not lighter than `solo`), but the launch peak varied from 0.95M to 1.27M tok/min across runs with 10 agents (0 to 64 `429` retries per run). Use about 8 agents per key at 28K (`-c 8` `solo`, `-c 4` `coop`/`team`) and 4 at 64K (`-c 4` `solo`, `-c 2` `coop`/`team`). See [model_config.md](model_config.md#concurrency).
 
 ## Step Budget Options
 
@@ -42,4 +42,4 @@ Nothing in the prompts or the agent loop mentions the 100-step limit, so agents 
 | Pick default model and thinking level | | [model_config.md](model_config.md) |
 | Set up the raw logs archive | | Private Hugging Face dataset, setup-check and `solo` baseline runs uploaded. See [logs_archive.md](logs_archive.md). |
 | Write the run and export tools | | [`tools/run.sh`](../tools/run.sh) launches a run with `AGENT_CONFIG` / `RUN_SUFFIX` and records `launch.json`; [`tools/export_results.py`](../tools/export_results.py) writes `results/<run_name>/` including API load and retry stats. |
-| Test 64K compaction threshold and model concurrency | | 64K cut compactions 1.4x to 3.5x on 3 pairs without fixing 0 submissions at 100 steps; derived per-mode `-c` table (`-c 10` `solo`, `-c 5` `coop`/`team`). See [harness_limits.md](harness_limits.md) and [model_config.md](model_config.md#concurrency). |
+| Test 64K compaction threshold and model concurrency | | 64K cut compactions 1.4x to 3.5x on 3 pairs without fixing 0 submissions at 100 steps; derived per-mode `-c` table (first `-c 10` `solo`, `-c 5` `coop`/`team`; lowered to `-c 8` / `-c 4` after Wave 1 runs logged up to 64 `429` retries at 10 agents). See [harness_limits.md](harness_limits.md) and [model_config.md](model_config.md#concurrency). |
