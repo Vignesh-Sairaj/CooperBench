@@ -63,6 +63,18 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
 
    `launch.json` and `run.json` record the slot number (never the key). `resources.log` counts every container on the machine, including other parallel runs.
 
+   To spread one large subset (for example the 50-pair `flash`) over several keys, split it into shards, run one shard per key, and merge them afterwards into a single run ([`tools/shards.py`](../tools/shards.py)):
+
+   ```bash
+   uv run --frozen python tools/shards.py split flash 3     # writes logs/_shards/flash-shard{1,2,3}of3
+   KEY_SLOT=2 tools/run.sh solo flash-shard1of3 4 --dataset-dir logs/_shards/flash-shard1of3
+   KEY_SLOT=3 tools/run.sh solo flash-shard2of3 4 --dataset-dir logs/_shards/flash-shard2of3
+   KEY_SLOT=4 tools/run.sh solo flash-shard3of3 4 --dataset-dir logs/_shards/flash-shard3of3
+   uv run --frozen python tools/shards.py merge solo-msa_v2-gemini-3-8-flash-flash-shard{1,2,3}of3
+   ```
+
+   The merged run is named without the shard part (here `solo-msa_v2-gemini-3-8-flash-flash`); export and archive it like any other run. Use the same `RUN_SUFFIX` and `AGENT_CONFIG` for every shard.
+
 3. **Watch it** (optional): `tail -f logs/<run_name>/console.log`, and `logs/<run_name>/resources.log` for load, memory, and container count.
 
 4. **Check for throttling:** `tools/run.sh` prints how many model calls were retried because of the Gemini rate limit (`429`) or a busy server (`5xx`). A few retries only slow agents down. Dozens of retries in `coop` or `team` can change results, because a slowed agent can make its partner give up waiting; next time run fewer pairs at once or use a key from another GCP project.
