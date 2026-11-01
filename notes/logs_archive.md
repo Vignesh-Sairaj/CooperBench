@@ -30,5 +30,29 @@ uv run --frozen hf download agent-coordination-lab/cooperbench-run-logs --repo-t
 
 ## Layout
 
-- `<run_name>/`: one folder per benchmark run, named exactly like the run (and like `results/<run_name>/`).
+- `<run_name>/`: one folder per benchmark run, named exactly like the run (and like `results/<run_name>/`). Each run's `summary.md` links to its folder under **Run Details**.
 - `setup-checks/`: single-pair runs from setting up the environment. Not used in results.
+
+Inside a run folder, each pair has its own folder. The path is built from the four pair columns in `pairs.csv` and `agents.csv`:
+
+```text
+<run_name>/<setting>/<repo>/<task_id>/f<feature_a>_f<feature_b>/
+```
+
+For example, `pallets_jinja_task,1559,4,8` in a `coop` run is `<run_name>/coop/pallets_jinja_task/1559/f4_f8/`. Each pair folder holds:
+
+| File | Contents |
+| :--- | :--- |
+| `result.json` | How each agent ended (status, steps, cost, patch size). |
+| `eval.json` | Grading: whether the patches applied and merged, and each feature's test results. |
+| `<agent>_full_traj.json` | The agent's complete history, including turns later replaced by compaction summaries (only written if the agent compacted at least once). |
+| `agent<feature>_traj.json` or `solo_traj.json` | The agent's final context as the model last saw it (`agent<feature>` uses the feature number, e.g. `agent4`). |
+| `agent<feature>.patch` or `solo.patch` | The patch that was graded. |
+| `conversation.json` | Messages the agents sent each other (`coop` and `team` only). |
+
+To download one pair instead of a whole run:
+
+```bash
+uv run --frozen hf download agent-coordination-lab/cooperbench-run-logs --repo-type dataset \
+  --include "<run_name>/coop/pallets_jinja_task/1559/*" --local-dir logs/
+```

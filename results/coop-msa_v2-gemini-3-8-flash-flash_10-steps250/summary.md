@@ -54,4 +54,4 @@ Same as `coop --git` with 250 steps (compaction at 28K), but without the shared 
 | Commit | `a5cb92e` |
 | Peak input load | 1,151,034 tok/min (74 calls/min, median 543,501) |
 | Model retries | 48 rate-limit (429), 2 server-busy (5xx), 51 total |
-| Raw logs | `hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-gemini-3-8-flash-flash_10-steps250` |
+| Raw logs | [coop-msa_v2-gemini-3-8-flash-flash_10-steps250/](https://huggingface.co/datasets/agent-coordination-lab/cooperbench-run-logs/tree/main/coop-msa_v2-gemini-3-8-flash-flash_10-steps250) (private dataset, see notes/logs_archive.md) |

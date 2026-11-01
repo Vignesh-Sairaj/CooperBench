@@ -54,4 +54,4 @@
 | Commit | `86975b2` |
 | Peak input load | 1,046,177 tok/min (69 calls/min, median 506,065) |
 | Model retries | 6 rate-limit (429), 4 server-busy (5xx), 10 total |
-| Raw logs | `hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250` |
+| Raw logs | [coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250/](https://huggingface.co/datasets/agent-coordination-lab/cooperbench-run-logs/tree/main/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250) (private dataset, see notes/logs_archive.md) |

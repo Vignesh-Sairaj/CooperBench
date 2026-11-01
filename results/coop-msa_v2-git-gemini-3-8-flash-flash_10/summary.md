@@ -53,4 +53,4 @@ Baseline for two agents with the harness's default budgets (100 steps each, comp
 | Commit | `86975b2` |
 | Peak input load | 986,251 tok/min (55 calls/min, median 626,900) |
 | Model retries | 7 rate-limit (429), 2 server-busy (5xx), 9 total |
-| Raw logs | `hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-8-flash-flash_10` |
+| Raw logs | [coop-msa_v2-git-gemini-3-8-flash-flash_10/](https://huggingface.co/datasets/agent-coordination-lab/cooperbench-run-logs/tree/main/coop-msa_v2-git-gemini-3-8-flash-flash_10) (private dataset, see notes/logs_archive.md) |

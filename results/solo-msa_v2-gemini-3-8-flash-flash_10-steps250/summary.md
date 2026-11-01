@@ -54,4 +54,4 @@ The `solo` baseline with the step limit raised from 100 to 250 (compaction still
 | Commit | `86975b2` |
 | Peak input load | 1,271,868 tok/min (85 calls/min, median 551,990) |
 | Model retries | 64 rate-limit (429), 2 server-busy (5xx), 66 total |
-| Raw logs | `hf://datasets/agent-coordination-lab/cooperbench-run-logs/solo-msa_v2-gemini-3-8-flash-flash_10-steps250` |
+| Raw logs | [solo-msa_v2-gemini-3-8-flash-flash_10-steps250/](https://huggingface.co/datasets/agent-coordination-lab/cooperbench-run-logs/tree/main/solo-msa_v2-gemini-3-8-flash-flash_10-steps250) (private dataset, see notes/logs_archive.md) |

@@ -52,4 +52,4 @@ Same as the `solo` baseline (100 steps, compaction at 28K), plus one paragraph a
 | Commit | `86975b2` |
 | Peak input load | 1,183,121 tok/min (87 calls/min, median 503,186) |
 | Model retries | 41 rate-limit (429), 1 server-busy (5xx), 42 total |
-| Raw logs | `hf://datasets/agent-coordination-lab/cooperbench-run-logs/solo-msa_v2-gemini-3-8-flash-flash_10-budgetprompt` |
+| Raw logs | [solo-msa_v2-gemini-3-8-flash-flash_10-budgetprompt/](https://huggingface.co/datasets/agent-coordination-lab/cooperbench-run-logs/tree/main/solo-msa_v2-gemini-3-8-flash-flash_10-budgetprompt) (private dataset, see notes/logs_archive.md) |
