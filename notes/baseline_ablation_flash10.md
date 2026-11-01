@@ -33,7 +33,7 @@ Every run uses `gemini-3.8-flash` with `HIGH` thinking and a `$10` per-agent cos
 | [coop, 250 steps](../results/coop-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) | `coop` | 250 | 28K | Does the shared git remote matter? | 8/10 | 18/20 agents | `$23.05` |
 | [coop --git, 250 steps, 64K](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250-compact64k/summary.md) | `coop --git` | 250 | 64K | `coop` vs. `solo` at the same per-agent budget | 8/10 | 20/20 agents | `$21.68` |
 
-"Pushed work" counts agents that pushed a non-empty patch before stopping. No run had agent errors or merge conflicts.
+"Pushed work" counts agents that pushed a non-empty patch before stopping. No run had agent errors or merge conflicts. All runs, including later ones, are listed in [runs.md](runs.md).
 
 ## Results per Pair
 

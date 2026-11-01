@@ -85,5 +85,5 @@ Rerunning with the same name skips pairs that already have results; add `--force
      logs/<run_name> <run_name> --repo-type dataset
    ```
 
-4. **Index it:** add a row for the run under **Benchmark Runs** in [index.md](index.md).
-5. **Commit and push** `results/<run_name>/` and `notes/index.md`, after the checks in `AGENTS.md`.
+4. **Index it:** add a row for the run in [runs.md](runs.md).
+5. **Commit and push** `results/<run_name>/` and `notes/runs.md`, after the checks in `AGENTS.md`.
