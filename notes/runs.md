@@ -31,5 +31,6 @@ How to read the table:
 | [`solo-...-flash_10-stepcounter`](../results/solo-msa_v2-gemini-3-8-flash-flash_10-stepcounter/summary.md) | `solo` | 3.8 Flash, high | `flash_10` | 100 | 28K | Step counter on every turn | Does a visible countdown make agents submit in time? | 7/10 | `$9.11` |
 | [`solo-...-3-flash-...-high`](../results/solo-msa_v2-gemini-3-flash-flash_10-high/summary.md) | `solo` | 3 Flash preview, high | `flash_10` | 100 | 28K | None | Thinking-level effect on the preview model | 5/10 | `$12.05` |
 | [`coop-...-git-...-3-flash-...-high`](../results/coop-msa_v2-git-gemini-3-flash-flash_10-high/summary.md) | `coop --git` | 3 Flash preview, high | `flash_10` | 100 | 28K | None | Thinking-level effect on the preview model | 4/10 | `$5.98` |
+| [`coop-...-git-...-3-flash-...-low`](../results/coop-msa_v2-git-gemini-3-flash-flash_10-low/summary.md) | `coop --git` | 3 Flash preview, low | `flash_10` | 100 | 28K | None | Model effect at equal thinking (vs. 3.8 Flash, low) | 5/10 | `$3.64` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
