@@ -6,11 +6,16 @@
   "model": "gemini/gemini-3.8-flash",
   "subset": "flash_10",
   "concurrency": 10,
+  "key_slot": null,
   "command": "cooperbench run -n solo-msa_v2-gemini-3-8-flash-flash_10-steps250 -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/steps250.yaml --setting solo -c 10 --backend docker",
   "git_commit": "86975b2e7cde0c5a08b69ce86c1c295ee4e3a5a5",
   "git_dirty": false,
   "agent_config_path": "configs/variants/steps250.yaml",
   "agent_config": "# Variant config: raise per-agent step limit from 100 to 250.\n# Pass via: AGENT_CONFIG=configs/variants/steps250.yaml RUN_SUFFIX=steps250 tools/run.sh ...\nagent:\n  cost_limit: 10.0\n  step_limit: 250\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 250,
+    "compaction_token_trigger": 28000
+  },
   "versions": {
     "cooperbench": "0.0.29",
     "litellm": "1.81.12"

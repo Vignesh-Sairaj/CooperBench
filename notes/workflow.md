@@ -76,7 +76,9 @@ Rerunning with the same name skips pairs that already have results; add `--force
    uv run --frozen python tools/export_results.py <run_name>
    ```
 
-2. **Write observations:** add a few lines under **Observations** in `results/<run_name>/summary.md`. Re-exporting keeps that section.
+2. **Describe the run:** in `results/<run_name>/summary.md`, fill in the two hand-written sections. Re-exporting keeps both.
+   - **Experiment:** what the run tests, how it differs from other runs, and why we ran it, in plain words for a teammate with no context.
+   - **Observations:** a few bullets on what we saw in the traces. Avoid internal field names and flags; say what happened.
 3. **Archive the raw logs** on Hugging Face (see [logs_archive.md](logs_archive.md)):
 
    ```bash

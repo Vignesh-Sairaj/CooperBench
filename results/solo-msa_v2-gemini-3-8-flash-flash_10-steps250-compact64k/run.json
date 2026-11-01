@@ -6,11 +6,16 @@
   "model": "gemini/gemini-3.8-flash",
   "subset": "flash_10",
   "concurrency": 4,
+  "key_slot": null,
   "command": "cooperbench run -n solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/steps250_compact64k.yaml --setting solo -c 4 --backend docker",
   "git_commit": "86975b2e7cde0c5a08b69ce86c1c295ee4e3a5a5",
   "git_dirty": false,
   "agent_config_path": "configs/variants/steps250_compact64k.yaml",
   "agent_config": "# Variant config: raise per-agent step limit to 250 and context compaction trigger to 64K tokens.\n# Pass via: AGENT_CONFIG=configs/variants/steps250_compact64k.yaml RUN_SUFFIX=steps250-compact64k tools/run.sh ...\nagent:\n  cost_limit: 10.0\n  step_limit: 250\n  compaction_token_trigger: 64000\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 250,
+    "compaction_token_trigger": 64000
+  },
   "versions": {
     "cooperbench": "0.0.29",
     "litellm": "1.81.12"
