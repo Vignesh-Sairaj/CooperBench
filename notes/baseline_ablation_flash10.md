@@ -46,8 +46,8 @@ Proposal: Adopt `250 steps + 64K compaction` (`configs/variants/steps250_compact
 | `250 steps + 28K compaction` (`steps250.yaml`, `-c 8` `solo` / `-c 4` `coop`,`team`) | Skewed (`20%` `solo` vs. `80%` `coop --git`) | ~`$19`-`$20` | Faster (`8` agents/key), but starves 2-feature `solo` on context. |
 | Upstream `100 steps + 28K` + harness step-countdown hook (`default.py`, behind flag) | Untested (requires harness code flag) | ~`$9`-`$12` | Cheapest, but forces rushed commits instead of letting `HIGH` thinking finish. |
 
-## Wave 2 Queue (Next Experiments on `flash_10`)
+## Wave 2 Results and Queue (`flash_10`)
 
-1. **`coop` (Redis messaging only, no `--git`) at 250 steps / 28K (`-c 5`)**: Isolates how much of `coop --git`'s `8/10` (`80%`) comes from shared git branch visibility vs. splitting the two features across two agents with Redis messaging, and measures baseline merge-conflict frequency without shared git.
+1. **Done: `coop` (Redis messaging only, no `--git`) at 250 steps / 28K (`-c 5`)**: [8/10 (80%)](../results/coop-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md), `$23.05`, the same score and the same two failing pairs (`pallets_jinja_task/1559`, `pillow_task/290`) as `coop --git` at 250 steps, with `0` merge conflicts. Shared git made no difference here.
 2. **`coop --git` at 250 steps + 64K compaction (`-c 2`)**: Completes the 2x2 `{solo, coop --git} x {28K, 64K}` table at 250 steps for an apples-to-apples per-agent context comparison against `solo` `steps250-compact64k` (`7/10`).
 3. **`team` mode at 250 steps / 28K (`-c 4`)**: Completes all four baseline topologies (`solo`, `coop`, `coop --git`, `team`) at 250 steps and checks genuine merges vs. lead-solo fallbacks.

@@ -1,0 +1,40 @@
+{
+  "run_name": "coop-msa_v2-gemini-3-8-flash-flash_10-steps250",
+  "setting": "coop",
+  "git_enabled": false,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3.8-flash",
+  "subset": "flash_10",
+  "concurrency": 5,
+  "command": "cooperbench run -n coop-msa_v2-gemini-3-8-flash-flash_10-steps250 -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/steps250.yaml --setting coop -c 5 --backend docker",
+  "git_commit": "a5cb92e62cd4f50ba2452e3ea61316816ddf8c57",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/steps250.yaml",
+  "agent_config": "# Variant config: raise per-agent step limit from 100 to 250.\n# Pass via: AGENT_CONFIG=configs/variants/steps250.yaml RUN_SUFFIX=steps250 tools/run.sh ...\nagent:\n  cost_limit: 10.0\n  step_limit: 250\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-01T05:19:43.314390",
+  "completed_at": "2026-11-01T07:37:36.448266",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-gemini-3-8-flash-flash_10-steps250",
+  "headline": {
+    "pairs": 10,
+    "passed": 8,
+    "pass_rate": 0.8,
+    "merge_conflicts": 0,
+    "agents_at_step_limit": 3,
+    "agents_errored": 0,
+    "cost_usd": 23.0491,
+    "cost_per_pair_usd": 2.3049,
+    "wall_minutes": 137.9
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1151034,
+    "median_input_tokens_per_min": 543501,
+    "peak_calls_per_min": 74,
+    "total_retries": 51,
+    "rate_limit_retries": 48,
+    "server_busy_retries": 2
+  }
+}

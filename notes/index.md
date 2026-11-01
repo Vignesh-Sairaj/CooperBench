@@ -27,3 +27,4 @@
 | `solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k` | `solo` | `flash_10` | 250 steps, 64K compaction | 7/10 (70%) | `$19.63` | [summary.md](../results/solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k/summary.md) |
 | `coop-msa_v2-git-gemini-3-8-flash-flash_10` | `coop --git` | `flash_10` | Reference (100 steps, 28K) | 3/10 (30%) | `$11.93` | [summary.md](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10/summary.md) |
 | `coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250` | `coop --git` | `flash_10` | 250 steps, 28K | 8/10 (80%) | `$19.87` | [summary.md](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250/summary.md) |
+| `coop-msa_v2-gemini-3-8-flash-flash_10-steps250` | `coop` | `flash_10` | 250 steps, 28K | 8/10 (80%) | `$23.05` | [summary.md](../results/coop-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) |
