@@ -1,0 +1,12 @@
+# Shared CooperBench agent config override for runs on Gemini 3.8 Flash.
+# Pass via: --agent-config configs/gemini_3_8_flash_high.yaml
+# Deep-merged onto coop.yaml (multi-agent) or solo.yaml (single-agent) by MiniSweAgentV2Runner.
+agent:
+  cost_limit: 10.0
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true
