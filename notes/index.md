@@ -10,7 +10,7 @@
 | [logs_archive.md](logs_archive.md) | How to access, upload, and download raw run logs in our private Hugging Face dataset. | 2026-10-31 |
 | [results_format.md](results_format.md) | Run naming, the files in `results/<run_name>/` (including `load` stats), every CSV column, and how to compare runs. | 2026-10-31 |
 | [harness_limits.md](harness_limits.md) | How 28K vs. 64K compaction, step limits, publish-only grading, and upstream timeout/clock bugs affect runs. | 2026-11-01 |
-| [baseline_ablation_flash10.md](baseline_ablation_flash10.md) | Wave 1 `flash_10` step-budget and compaction results (`0%`-`10%` to `70%` `solo`, `30%` to `80%` `coop --git`) and Wave 2 queue. | 2026-11-01 |
+| [baseline_ablation_flash10.md](baseline_ablation_flash10.md) | What we learned from varying step limits and compaction on `flash_10`: what was run, why, results, and conclusions. | 2026-11-01 |
 
 ## Coordination Intervention Notes
 

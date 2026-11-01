@@ -1,53 +1,76 @@
-# Step-Budget and Compaction Ablation (`flash_10`)
+# Step Limit and Compaction Experiments (`flash_10`)
 
-Proposal: Adopt `250 steps + 64K compaction` (`configs/variants/steps250_compact64k.yaml`) as our primary `HIGH`-thinking evaluation regime so both `solo` (`7/10`) and `coop --git` (`8/10` at 28K; 64K queued next) submit reliably instead of timing out unpushed under upstream's `100-step / 28K` defaults (`0/10` to `1/10` `solo`, `3/10` `coop --git`).
+## Summary
 
-## Summary of `flash_10` Runs (`gemini/gemini-3.8-flash`, `HIGH` thinking)
+We ran `solo` and `coop` on the 10-pair `flash_10` subset under different step limits and compaction thresholds, to decide which budgets to use for our baselines and coordination experiments.
 
-| Run | Setting | Steps | Compaction | `-c` | Passed | Pushed | Med. compactions | Cost | Wall | Peak tok/min | `429` / `5xx` |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | ---: | ---: | ---: | :---: |
-| [ref](../results/solo-msa_v2-gemini-3-8-flash-flash_10/summary.md) | `solo` | 100 | 28K | 10 | 1/10 (10%) | 1/10 | 9 (5..22) | `$8.92` | 49m | 947.6K | 0 / 0 |
-| [r2](../results/solo-msa_v2-gemini-3-8-flash-flash_10-r2/summary.md) | `solo` | 100 | 28K | 10 | 0/10 (0%) | 0/10 | 8 (5..15) | `$8.99` | 107m* | 1,043.2K | 9 / 0 |
-| [budgetprompt](../results/solo-msa_v2-gemini-3-8-flash-flash_10-budgetprompt/summary.md) | `solo` | 100 + prompt | 28K | 10 | 0/10 (0%) | 0/10 | 9 (5..17) | `$8.41` | 49m | 1,183.1K | 41 / 1 |
-| [steps250](../results/solo-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) | `solo` | 250 | 28K | 10 | 2/10 (20%) | 2/10 | 24 (15..31) | `$18.75` | 90m | 1,271.9K | 64 / 2 |
-| [steps250-compact64k](../results/solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k/summary.md) | `solo` | 250 | 64K | 4 | **7/10 (70%)** | 7/10 | 6 (2..22) | `$19.63` | 128m | 1,083.1K | 1 / 0 |
-| [coop --git ref](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10/summary.md) | `coop --git` | 100 | 28K | 5 | 3/10 (30%) | 9/20 | 6 (2..12) | `$11.93` | 59m | 986.3K | 7 / 2 |
-| [coop --git steps250](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250/summary.md) | `coop --git` | 250 | 28K | 5 | **8/10 (80%)** | 16/20 | 6 (2..25) | `$19.87` | 124m | 1,046.2K | 6 / 4 |
+- With the upstream defaults (100 steps, 28K compaction), most agents are stopped before they push any work. At these budgets, scores mostly measure whether an agent finishes in time, not how well it coordinates.
+- With 250 steps, `coop` reaches 8/10. `solo` needs both 250 steps and 64K compaction to reach 7/10.
+- At 250 steps, `solo` (7/10), `coop --git` (8/10) and `coop` (8/10) are statistically indistinguishable on 10 pairs. These runs do **not** show that `coop` beats `solo`.
+- **Proposed default for our experiments (team decision pending):** 250 steps and 64K compaction for every setting.
 
-\*`r2` wall time includes an 83-minute `grep -rn "gh-pr" /` hang inside `go_chi_task/26` before manual process termination (see [harness_limits.md](harness_limits.md)). All 7 runs finished with `0` agent errors and `0` merge conflicts.
+## Terms
 
-## Pair-by-Pair Outcomes
+- **Settings:** `solo` is one agent implementing both features. `coop` is two agents, one feature each, who can message each other. `coop --git` adds a shared git remote where they can push and pull each other's branches.
+- **Step limit:** the maximum number of model responses per agent. The agent is then stopped, and only work it has pushed is graded. Upstream default: 100.
+- **Compaction:** once a request reaches this many tokens, the harness replaces older turns with a model-written summary and keeps only the last 2 turns verbatim. Upstream default: 28K.
+- **Passed:** both features' hidden tests pass (in `coop`, after merging the two agents' patches).
+- **Subset:** `flash_10` is 10 hand-picked feature pairs from 9 repos, used for cheap screening.
 
-| Pair | `solo` 100/28K | `solo` `r2` | `solo` `budgetprompt` | `solo` 250/28K | `solo` 250/64K | `coop --git` 100/28K | `coop --git` 250/28K |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `dottxt_ai_outlines_task/1655` (7,10) | - | - | - | pass | pass | pass | pass |
-| `dspy_task/8394` (3,4) | - | - | - | - | - | A only | pass |
-| `go_chi_task/26` (1,2) | - | - | - | - | pass | A only | pass |
-| `huggingface_datasets_task/6252` (4,6) | - | - | - | - | pass | B only | pass |
-| `openai_tiktoken_task/0` (6,8) | - | - | - | - | pass | pass | pass |
-| `pallets_click_task/2800` (1,7) | - | - | - | - | pass | - | pass |
-| `pallets_jinja_task/1559` (4,8) | - | - | - | - | - | - | - |
-| `pallets_jinja_task/1621` (4,5) | pass | - | - | pass | pass | pass | pass |
-| `pillow_task/290` (4,5) | - | - | - | - | - | - | - |
-| `typst_task/6554` (7,8) | - | - | - | - | pass | - | pass |
+Every run uses `gemini-3.8-flash` with `HIGH` thinking and a `$10` per-agent cost cap.
 
-## Why the Results Moved
+## What We Ran and Why
 
-1. **Static prompt budget notices (`budgetprompt`) fail because compaction erases turn-count cues.** Across all 10 `budgetprompt` trajectories (including `HIGH` thinking traces), zero assistant messages mentioned the step cap. Because `DefaultAgent._compact_messages()` replaces older history every ~9 steps and retains only `compaction_keep_recent_turns: 2` while tool observations carry no step counter, the model never sees more than ~2 to 10 recent turns and cannot tell whether it is on step 12 or step 95. Any effective step-budget warning must inject remaining steps into per-turn tool observations in `default.py`.
-2. **A 2-feature `solo` agent needs both 250 steps and 64K context (`7/10`), whereas two single-feature `coop` peers already hold `2 x 28K = 56K` aggregate context (`8/10` at 250 steps).** Raising `solo` to 250 steps at 28K lifted pass rate only from `1/10` to `2/10` because holding two features in a 28K window caused `15` to `31` compactions per agent (median `24`). Raising `solo`'s compaction trigger to `64K` cut median compactions from `24` to `6`, let 7 of 10 agents finish in `96` to `229` steps (`7/7` submitted passed both features), and kept run cost flat (`$19.63` vs. `$18.75`) because passing agents stopped early instead of running all 250 steps.
-3. **Upstream's `100-step / 28K` defaults invert `solo` vs. `coop` on `HIGH`-thinking `gemini-3.8-flash`.** At 100 steps / 28K, `coop --git` (`30%`) appears 6x better than `solo` (`0%` to `10%`, mean `5%`) simply because splitting two features across two 100-step / 28K budgets lets one-feature peers finish before step 100. Giving `solo` matched context and step room (`250 steps / 64K`) restores a meaningful `70%` single-agent baseline.
-4. **10 agents per key is too many at 28K (`0` agent errors, but frequent `429` retries).** `solo` at `-c 10` peaked at `0.95M` to `1.27M` input tok/min across four runs (`0` to `64` `429` retries), and `coop --git` at `-c 5` (also 10 agents) peaked at `986K` and `1,046K` (`7` and `6` `429` retries). `-c 4` for `solo` at 64K peaked at `1,083K` tok/min (`1` `429` retry, `0` `5xx` retries). We now use about 8 agents per key at 28K (`-c 8` `solo`, `-c 4` `coop`/`team`) and 4 at 64K; see [model_config.md](model_config.md#concurrency).
+| Run | Setting | Step limit | Compaction | Question | Passed | Pushed work | Cost |
+| :--- | :--- | :---: | :---: | :--- | :---: | :---: | ---: |
+| [solo, upstream budgets](../results/solo-msa_v2-gemini-3-8-flash-flash_10/summary.md) | `solo` | 100 | 28K | Baseline with upstream defaults | 1/10 | 1/10 agents | `$8.92` |
+| [solo, repeat](../results/solo-msa_v2-gemini-3-8-flash-flash_10-r2/summary.md) | `solo` | 100 | 28K | How much does the same setup vary? | 0/10 | 0/10 agents | `$8.99` |
+| [solo, limit in prompt](../results/solo-msa_v2-gemini-3-8-flash-flash_10-budgetprompt/summary.md) | `solo` | 100 | 28K | Does stating the limit in the task help? | 0/10 | 0/10 agents | `$8.41` |
+| [solo, 250 steps](../results/solo-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) | `solo` | 250 | 28K | Do agents finish with more steps? | 2/10 | 2/10 agents | `$18.75` |
+| [solo, 250 steps, 64K](../results/solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k/summary.md) | `solo` | 250 | 64K | Does one agent need more context for two features? | 7/10 | 7/10 agents | `$19.63` |
+| [coop --git, upstream budgets](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10/summary.md) | `coop --git` | 100 | 28K | Baseline with upstream defaults | 3/10 | 9/20 agents | `$11.93` |
+| [coop --git, 250 steps](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-steps250/summary.md) | `coop --git` | 250 | 28K | Do agents finish with more steps? | 8/10 | 16/20 agents | `$19.87` |
+| [coop, 250 steps](../results/coop-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md) | `coop` | 250 | 28K | Does the shared git remote matter? | 8/10 | 18/20 agents | `$23.05` |
 
-## Reference Setup Options for Team Decision
+"Pushed work" counts agents that pushed a non-empty patch before stopping. No run had agent errors or merge conflicts.
 
-| Option | `solo` vs. `coop` signal | Cost per 10-pair run | Tradeoff |
-| :--- | :--- | :---: | :--- |
-| **`(Recommended)` `250 steps + 64K compaction` for all modes** (`steps250_compact64k.yaml`, `-c 4` `solo` / `-c 2` `coop`,`team`) | High (`70%` `solo`; equal per-agent context) | ~`$20`-`$25` | Slower concurrency (`4` agents/key); requires Wave 2 `coop --git` 64K check. |
-| `250 steps + 28K compaction` (`steps250.yaml`, `-c 8` `solo` / `-c 4` `coop`,`team`) | Skewed (`20%` `solo` vs. `80%` `coop --git`) | ~`$19`-`$20` | Faster (`8` agents/key), but starves 2-feature `solo` on context. |
-| Upstream `100 steps + 28K` + harness step-countdown hook (`default.py`, behind flag) | Untested (requires harness code flag) | ~`$9`-`$12` | Cheapest, but forces rushed commits instead of letting `HIGH` thinking finish. |
+## Results per Pair
 
-## Wave 2 Results and Queue (`flash_10`)
+"A only" or "B only" means only one of the two features passed.
 
-1. **Done: `coop` (Redis messaging only, no `--git`) at 250 steps / 28K (`-c 5`)**: [8/10 (80%)](../results/coop-msa_v2-gemini-3-8-flash-flash_10-steps250/summary.md), `$23.05`, the same score and the same two failing pairs (`pallets_jinja_task/1559`, `pillow_task/290`) as `coop --git` at 250 steps, with `0` merge conflicts. Shared git made no difference here.
-2. **`coop --git` at 250 steps + 64K compaction (`-c 2`)**: Completes the 2x2 `{solo, coop --git} x {28K, 64K}` table at 250 steps for an apples-to-apples per-agent context comparison against `solo` `steps250-compact64k` (`7/10`).
-3. **`team` mode at 250 steps / 28K (`-c 4`)**: Completes all four baseline topologies (`solo`, `coop`, `coop --git`, `team`) at 250 steps and checks genuine merges vs. lead-solo fallbacks.
+| Pair | `solo` 100 | `solo` 100 repeat | `solo` 100, limit in prompt | `solo` 250 | `solo` 250, 64K | `coop --git` 100 | `coop --git` 250 | `coop` 250 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| `dottxt_ai_outlines/1655` | - | - | - | pass | pass | pass | pass | pass |
+| `dspy/8394` | - | - | - | - | - | A only | pass | pass |
+| `go_chi/26` | - | - | - | - | pass | A only | pass | pass |
+| `huggingface_datasets/6252` | - | - | - | - | pass | B only | pass | pass |
+| `openai_tiktoken/0` | - | - | - | - | pass | pass | pass | pass |
+| `pallets_click/2800` | - | - | - | - | pass | - | pass | pass |
+| `pallets_jinja/1559` | - | - | - | - | - | - | - | - |
+| `pallets_jinja/1621` | pass | - | - | pass | pass | pass | pass | pass |
+| `pillow/290` | - | - | - | - | - | - | - | B only |
+| `typst/6554` | - | - | - | - | pass | - | pass | pass |
+
+## Conclusions
+
+1. **Upstream budgets stop agents before they submit.** At 100 steps and 28K compaction, 9 to 10 of 10 `solo` agents and 11 of 20 `coop --git` agents were stopped with nothing pushed. A `solo` agent has to fit two features into one budget, so it is hit hardest.
+2. **Telling the agent the step limit did not help (0/10).** The limit was in the task prompt, which the agent sees on every call, but nothing tells it which step it is on, and compaction drops the history it could count from. No agent mentioned the limit in its reasoning. Showing the current step number on every turn is untested.
+3. **More steps help `coop` far more than `solo` at 28K.** At 250 steps, `coop --git` reached 8/10 but `solo` only 2/10. The `solo` agents compacted a median of 24 times, losing file context each time. At 64K, the median dropped to 6 and `solo` reached 7/10 at about the same cost.
+4. **`solo` and `coop` are tied at 250 steps.** `solo` with 64K (7/10) and `coop --git` (8/10) disagree on exactly one pair (`dspy/8394`). With 10 pairs, a paired test needs about 6 disagreeing pairs, all going the same way, to call a difference real. The budgets are also unequal: each `coop` agent gets 250 steps for one feature, while `solo` gets 250 for two.
+5. **The shared git remote made no difference at 250 steps.** `coop` and `coop --git` passed the same 8 pairs.
+6. **Two pairs fail in every setting.** In `pallets_jinja/1559`, agents always run out of steps without pushing anything (the `solo` agent at 64K never got as far as editing). In `pillow/290`, even when both agents submitted (`coop`, 250 steps), feature 4 still failed 1 of its 8 tests.
+
+## Why This Differs from the Paper
+
+The CooperBench paper reports `solo` well ahead of `coop`. Our numbers should not be read as contradicting it, for three reasons:
+
+- **The harness changed after the paper.** Compaction at 28K and grading only pushed work were both added in April 2026, after the paper. Both hurt a two-feature `solo` agent the most.
+- **`flash_10` is not a random sample.** It was hand-picked from easy and mid-difficulty pairs, and no `coop` run on it had a merge conflict. The paper's `coop` losses come largely from pairs whose features touch the same code.
+- **The samples are small.** Each arm ran once on 10 pairs. The 95% interval for 7/10 is roughly 40% to 89%.
+
+## Next
+
+- `coop --git` with 250 steps and 64K, for a comparison with `solo` at the same per-agent context (running).
+- `team` with 250 steps, to complete the four settings.
+- `solo` with the current step number shown on every turn, to test whether a visible countdown makes agents submit in time.
+- Repeat runs, or the 50-pair `flash` subset, before drawing conclusions about `solo` vs. `coop`.
