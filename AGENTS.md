@@ -2,7 +2,7 @@
 
 ## Upstream Hygiene
 
-- `main` must keep reproducing the upstream `63b9d44` baselines. Add each new coordination intervention behind an opt-in flag (for example `--verifier`) that is off by default, so runs without the flag behave exactly like upstream.
+- Keep the upstream `63b9d44` harness code on `main` unchanged by default. Add each new coordination intervention behind an opt-in flag (for example `--verifier`) that is off by default, so runs without the flag match our reference setup.
 - Do not edit upstream files (`README.md`, `CHANGELOG.md`, `CLAUDE.md`, `docs/`) so upstream merges stay conflict-free.
 - Never commit `.env`, API keys, or scratch scripts. Use `uv run --frozen` so `uv.lock` is never rewritten.
 
@@ -15,8 +15,8 @@
 
 ## Running Benchmarks
 
-- Use the defaults in [`notes/model_config.md`](notes/model_config.md), identical across every run in a comparison.
-- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). Start at `-c 3` and raise it only after checking the Gemini rate limits (see [`notes/tasks.md`](notes/tasks.md)).
+- Run every benchmark with the [reference setup](notes/model_config.md#reference-setup) (use `tools/run.sh`), identical across every run in a comparison.
+- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). Use `-c 10` with one run at a time per Gemini API key, and check the retry count after each run (see [`notes/model_config.md`](notes/model_config.md#concurrency)).
 
 ## Before Pushing
 
