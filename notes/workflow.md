@@ -49,7 +49,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    tools/run.sh coop flash_10 4 --git         # coop-msa_v2-git-gemini-3-8-flash-flash_10
    ```
 
-   To try different budgets, pass a variant config and a name suffix, for example `RUN_SUFFIX=steps250-compact64k AGENT_CONFIG=configs/variants/steps250_compact64k.yaml tools/run.sh solo flash_10 4`. With 64K compaction each agent uses about twice the tokens, so halve the pairs at once.
+   To try different budgets, pass a variant config and a name suffix, for example `RUN_SUFFIX=steps250-compact64k AGENT_CONFIG=configs/variants/steps250_compact64k.yaml tools/run.sh solo flash_10 4`. With 64K compaction each agent uses about twice the tokens, so halve the pairs at once. To use another model, set `MODEL`, for example `MODEL=gemini/gemini-3-flash-preview AGENT_CONFIG=configs/variants/thinking_minimal.yaml RUN_SUFFIX=minimal tools/run.sh solo flash_10 8`.
 
    Run one benchmark at a time per GCP project key (see [Concurrency](model_config.md#concurrency)). A run over `flash_10` takes one to two hours. Grading runs automatically at the end.
 

@@ -11,6 +11,7 @@ Baseline for two agents with the harness's default budgets (100 steps each, comp
 | | |
 | :--- | :--- |
 | Setting | `coop` with shared git, 2 agents per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 100 per agent |
 | Compaction | at 28K tokens |
@@ -46,7 +47,6 @@ Baseline for two agents with the harness's default budgets (100 steps each, comp
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/gemini_3_8_flash_high.yaml` |
 | Concurrency | `-c 5` (pairs run at once) |
 | API key slot | default |

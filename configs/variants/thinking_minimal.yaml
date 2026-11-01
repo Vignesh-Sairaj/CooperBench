@@ -1,0 +1,12 @@
+# Variant config: thinking level "minimal" (the reference config uses high).
+# Used for the model and thinking-level comparison. Pass via:
+#   MODEL=<model> AGENT_CONFIG=configs/variants/thinking_minimal.yaml RUN_SUFFIX=minimal tools/run.sh ...
+agent:
+  cost_limit: 10.0
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: minimal
+      includeThoughts: true

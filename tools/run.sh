@@ -8,7 +8,8 @@
 #
 # The run name is the CLI's own auto-generated name. To add a method suffix for an
 # intervention or variant arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
-# Set AGENT_CONFIG to override the default config (configs/gemini_3_8_flash_high.yaml).
+# Set AGENT_CONFIG to override the default config (configs/gemini_3_8_flash_high.yaml), and
+# MODEL to use another model (default gemini/gemini-3.8-flash; the run name includes it).
 #
 # Gemini rate limits are per GCP project, so parallel runs need keys from different
 # projects. Put them in .env as GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... and set
@@ -32,7 +33,7 @@ fi
 SETTING="$1"; SUBSET="$2"; CONC="$3"; shift 3
 EXTRA=("$@")
 UV_RUN="${UV_RUN:-uv run --frozen}"
-MODEL="gemini/gemini-3.8-flash"
+MODEL="${MODEL:-gemini/gemini-3.8-flash}"
 AGENT="mini_swe_agent_v2"
 CONFIG="${AGENT_CONFIG:-configs/gemini_3_8_flash_high.yaml}"
 KEY_SLOT="${KEY_SLOT:-}"

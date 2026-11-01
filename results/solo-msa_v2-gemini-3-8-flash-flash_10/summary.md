@@ -11,6 +11,7 @@ Baseline for a single agent with the harness's default budgets. One agent implem
 | | |
 | :--- | :--- |
 | Setting | `solo`, 1 agent per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 100 per agent |
 | Compaction | at 28K tokens |
@@ -46,7 +47,6 @@ Baseline for a single agent with the harness's default budgets. One agent implem
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/gemini_3_8_flash_high.yaml` |
 | Concurrency | `-c 10` (pairs run at once) |
 | API key slot | default |

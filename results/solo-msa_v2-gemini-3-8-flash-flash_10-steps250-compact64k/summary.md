@@ -11,6 +11,7 @@
 | | |
 | :--- | :--- |
 | Setting | `solo`, 1 agent per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 250 per agent |
 | Compaction | at 64K tokens |
@@ -46,7 +47,6 @@
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/variants/steps250_compact64k.yaml` |
 | Concurrency | `-c 4` (pairs run at once) |
 | API key slot | default |

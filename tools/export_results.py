@@ -39,6 +39,7 @@ HAND_WRITTEN = {
 HARNESS_CONFIG_DIR = Path(__file__).resolve().parent.parent / "src/cooperbench/agents/mini_swe_agent_v2/config"
 STEP_LIMIT_RE = re.compile(r"^\s*step_limit:\s*(\d+)", re.MULTILINE)
 COMPACTION_RE = re.compile(r"^\s*compaction_token_trigger:\s*(\d+)", re.MULTILINE)
+THINKING_RE = re.compile(r"^\s*thinkingLevel:\s*([A-Za-z]+)", re.MULTILINE)
 
 RATE_LIMIT_RE = re.compile(r"^Retrying .*RateLimitError", re.IGNORECASE)
 SERVER_BUSY_RE = re.compile(
@@ -277,6 +278,8 @@ def agent_budgets(setting: str, agent_config: str | None) -> dict:
     for key, pattern in (("step_limit", STEP_LIMIT_RE), ("compaction_token_trigger", COMPACTION_RE)):
         match = pattern.search(agent_config or "") or pattern.search(defaults)
         budgets[key] = int(match.group(1)) if match else None
+    thinking = THINKING_RE.search(agent_config or "")
+    budgets["thinking_level"] = thinking.group(1).lower() if thinking else None
     return budgets
 
 
@@ -327,6 +330,7 @@ def render_summary(run: dict, pairs: list[dict], hand_written: dict[str, str]) -
         "| | |",
         "| :--- | :--- |",
         f"| Setting | `{run.get('setting')}`{git_note}, {n_agents} agent{'s' if n_agents != 1 else ''} per pair |",
+        f"| Model | `{run.get('model')}`, {b.get('thinking_level') or 'LiteLLM default'} thinking |",
         f"| Subset | `{run.get('subset') or 'custom'}` ({h['pairs']} pair{'s' if h['pairs'] != 1 else ''}) |",
         f"| Step limit | {steps} |",
         f"| Compaction | {compaction} |",
@@ -360,7 +364,6 @@ def render_summary(run: dict, pairs: list[dict], hand_written: dict[str, str]) -
         "",
         "| | |",
         "| :--- | :--- |",
-        f"| Model | `{run.get('model')}` |",
         f"| Agent config | `{run.get('agent_config_path') or 'unknown'}` |",
         f"| Concurrency | `-c {run.get('concurrency')}` (pairs run at once) |",
         f"| API key slot | {key_slot if key_slot is not None else 'default'} |",

@@ -11,6 +11,7 @@ An exact repeat of the `solo` baseline (100 steps, compaction at 28K), to see ho
 | | |
 | :--- | :--- |
 | Setting | `solo`, 1 agent per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 100 per agent |
 | Compaction | at 28K tokens |
@@ -46,7 +47,6 @@ An exact repeat of the `solo` baseline (100 steps, compaction at 28K), to see ho
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/gemini_3_8_flash_high.yaml` |
 | Concurrency | `-c 10` (pairs run at once) |
 | API key slot | default |

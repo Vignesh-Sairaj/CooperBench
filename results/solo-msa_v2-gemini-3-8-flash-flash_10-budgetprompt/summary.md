@@ -11,6 +11,7 @@ Same as the `solo` baseline (100 steps, compaction at 28K), plus one paragraph a
 | | |
 | :--- | :--- |
 | Setting | `solo`, 1 agent per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 100 per agent |
 | Compaction | at 28K tokens |
@@ -45,7 +46,6 @@ Same as the `solo` baseline (100 steps, compaction at 28K), plus one paragraph a
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/variants/budgetprompt.yaml` |
 | Concurrency | `-c 10` (pairs run at once) |
 | API key slot | default |

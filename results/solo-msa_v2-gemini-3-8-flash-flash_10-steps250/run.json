@@ -14,7 +14,8 @@
   "agent_config": "# Variant config: raise per-agent step limit from 100 to 250.\n# Pass via: AGENT_CONFIG=configs/variants/steps250.yaml RUN_SUFFIX=steps250 tools/run.sh ...\nagent:\n  cost_limit: 10.0\n  step_limit: 250\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
   "budgets": {
     "step_limit": 250,
-    "compaction_token_trigger": 28000
+    "compaction_token_trigger": 28000,
+    "thinking_level": "high"
   },
   "versions": {
     "cooperbench": "0.0.29",

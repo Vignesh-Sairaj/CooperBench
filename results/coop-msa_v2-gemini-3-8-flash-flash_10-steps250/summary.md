@@ -11,6 +11,7 @@ Same as `coop --git` with 250 steps (compaction at 28K), but without the shared 
 | | |
 | :--- | :--- |
 | Setting | `coop`, 2 agents per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 250 per agent |
 | Compaction | at 28K tokens |
@@ -47,7 +48,6 @@ Same as `coop --git` with 250 steps (compaction at 28K), but without the shared 
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/variants/steps250.yaml` |
 | Concurrency | `-c 5` (pairs run at once) |
 | API key slot | default |

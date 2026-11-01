@@ -11,6 +11,7 @@ The `solo` baseline with the step limit raised from 100 to 250 (compaction still
 | | |
 | :--- | :--- |
 | Setting | `solo`, 1 agent per pair |
+| Model | `gemini/gemini-3.8-flash`, high thinking |
 | Subset | `flash_10` (10 pairs) |
 | Step limit | 250 per agent |
 | Compaction | at 28K tokens |
@@ -47,7 +48,6 @@ The `solo` baseline with the step limit raised from 100 to 250 (compaction still
 
 | | |
 | :--- | :--- |
-| Model | `gemini/gemini-3.8-flash` |
 | Agent config | `configs/variants/steps250.yaml` |
 | Concurrency | `-c 10` (pairs run at once) |
 | API key slot | default |
