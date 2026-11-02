@@ -14,6 +14,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Team-size experiment with 3 and 4 agents (later) | | `coop` and `team` already start one agent per feature (`-f 1,2,3` runs 3 agents), and `team3_250` / `team3_all` list three-feature groups. Blocker: the grader only checks two features (the local path uses the first two; the batch path crashes on three). Extend it to merge all patches and require every feature's tests to pass. |
 | Send the submit-reminder crash fix upstream | | Fixed in our fork (see [harness_limits.md](harness_limits.md)). Rebase the fix onto the latest upstream commit and open a pull request on `cooperbench/CooperBench`. |
 | Confirm `HIGH` thinking with the team | | Our status report left the thinking setting open. Share [model_config.md](model_config.md). |
+| Fix `team` grading (after the midpoint) | | The lead's combined work is never graded. Pause `team` runs until fixed. See [details](#fix-team-grading). |
 
 ## Done
 
@@ -30,3 +31,50 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Run experiments in parallel on several API keys | | `KEY_SLOT` in `tools/run.sh`. See [workflow.md](workflow.md). |
 | Four baseline settings on `flash_10` | | `solo`, `coop`, `coop --git`, and `team` done. See [runs.md](runs.md). |
 | Model, thinking level, and step counter experiments | | See [model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md). |
+
+## Task Details
+
+### Fix `team` grading
+
+**Problem in one sentence:** in `team` mode the lead is told to combine both features in a local file that the grader never reads, so the lead's integration work is thrown away and `team` scores far below two peers.
+
+**How `team` mode works.** One agent is the lead and one is the member. Each implements one feature. They share a folder (`/workspace/shared/`), a task list, and messaging, but no shared git server unless `--git` is passed. The idea is that the lead integrates both features into one result.
+
+**Why the lead gets contradicting instructions.** With the `mini_swe_agent_v2` harness, each agent's prompt is the normal `coop` task prompt with the `team` role prompt appended after it ([`adapter.py`](../src/cooperbench/agents/mini_swe_agent_v2/adapter.py)):
+
+1. The `coop` prompt ([`coop.yaml`](../src/cooperbench/agents/mini_swe_agent_v2/config/coop.yaml)) says the pushed pull request is the submission and that it must contain only the agent's own work, without the colleague's changes.
+2. The `team` lead prompt ([`team_harness/prompt.py`](../src/cooperbench/team_harness/prompt.py)) says the opposite: apply each member's patch from `/workspace/shared/<agent>.patch`, check that both features are in the working tree, and then write `git diff > patch.txt`. It warns that submitting only the lead's own feature fails the team.
+
+**Why `patch.txt` is ignored.** The `team` prompt was written for the command-line agent harnesses, which grade a local `patch.txt`. `mini_swe_agent_v2` grades only what each agent pushed to its git remote (`git_connector.submitted_patch()` in `adapter.py`): the shared server with `--git`, otherwise a private repository inside the agent's own sandbox. Upstream made that change on purpose, so that agents cannot submit work their partner never saw.
+
+**How grading then plays out** ([`eval/sandbox.py`](../src/cooperbench/eval/sandbox.py)). The grader merges the lead's and the member's pushed patches with a plain three-way git merge:
+
+- **Clean merge:** both feature test suites run on the merged code, and that result is final.
+- **Merge conflict, or a patch that does not apply:** the grader falls back to testing the lead's patch alone against both test suites.
+
+So the lead loses either way:
+
+- **Lead follows the `coop` prompt** (pushes only its own feature; the combined code sits unused in `patch.txt`): if the two branches conflict, the fallback tests a lead patch that has only one feature, and the pair fails.
+- **Lead follows the `team` prompt and pushes the combined code:** its branch now overlaps the member's branch, so the merge almost always conflicts. The pair passes only through the lead-alone fallback, and only if the combined code is right.
+
+**Evidence.** On the 50-pair `flash` subset at `low` thinking, 500 steps ([summary](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md), [saturation_flash.md](saturation_flash.md)):
+
+- `team` passed 22/50, vs. 30/50 for `coop --git` and 36/50 for `solo` with the same setup.
+- 30 of 50 pairs had merge conflicts (0 of 50 in `coop --git`), and 9 of the 22 passes came through the lead-alone fallback.
+- All 50 leads wrote `patch.txt`. On 7 pairs that `solo` solves, the lead pushed only its own feature while `patch.txt` held both: `dottxt_ai_outlines_task/1655` (7,10), `openai_tiktoken_task/0` (3,6) and (6,8), `pallets_click_task/2068` (1,6) and (5,7), `pallets_jinja_task/1465` (2,3), and `pallets_jinja_task/1621` (1,6). That is half of `team`'s 14 losses against `solo`.
+- Earlier `flash_10` runs show the same pattern: `team` 4/10 and 5/10, vs. 8/10 for `coop --git`.
+
+**A second, smaller bug (message counts).** `_spawn_team_agent` in [`runner/team.py`](../src/cooperbench/runner/team.py) does not pass the agent's sent messages back to the runner, so `messages_sent` in `result.json` reads 0 on 49 of 50 pairs. The trajectories show the agents actually sent 1 to 31 messages per pair (median 14.5). This affects only logging, not scores.
+
+**Proposed fix** (behind a new flag that is off by default, so runs without it still match upstream):
+
+1. Make the instructions agree. With the flag on, tell the lead to bring the member's work into its own branch and push the combined code as its pull request. The member keeps pushing only its own feature.
+2. Make the grader match. With the flag on, grade the lead's pushed branch alone against both test suites, the same check the fallback already does, instead of merging it with the member's branch first. Grading the lead's `patch.txt` instead would also work, but it brings back the problem upstream removed (graded work the partner never saw), so pushing to git is preferred.
+3. Pass sent messages through in `runner/team.py` so `messages_sent` is correct. This one is a plain bug fix and can go upstream without a flag.
+
+**Done when:**
+
+- Unit tests cover the new prompt and grading path, and a run with the flag off gives the same prompts and grading as today.
+- `team` is rerun with the flag on, on `flash_10` and then on `flash` at the team's standard thinking level, and compared pair by pair with `coop --git` and `solo`.
+- Each of the 7 pairs listed above either passes or fails for a reason other than the unpushed integration.
+- An upstream issue or pull request is opened for the mismatch and the message-count bug.
