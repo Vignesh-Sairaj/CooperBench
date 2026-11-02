@@ -19,12 +19,17 @@ Every run below uses `gemini-3.8-flash` on the 50-pair `flash` subset, a 500-ste
 | [`solo`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-high/summary.md) | `high` | **34/50 (68%)** | 2/50 | n/a | 169 | 7 | `$110.14` | 417 min |
 | [`coop --git`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **30/50 (60%)** | 0/100 | 0/50 | 87 | 0 | `$39.85` | 346 min |
 | [`coop --git`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-high/summary.md) | `high` | **34/50 (68%)** | 0/100 | 0/50 | 104 | 3 | `$96.17` | 476 min |
+| [`coop --git`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium/summary.md) | `medium` | **38/50 (76%)** | 0/100 | 0/50 | 186 per pair | n/a | `$81.68` | 378 min |
 | [`team`](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **22/50 (44%)** | 0/100 | 30/50 | 74.5 | 0 | `$35.10` | 433 min |
 | [`solo`, no step counter](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 84 | 0 | `$25.64` | 309 min |
 | [`solo`, repeat on Vertex AI](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 74 | 0 | `$33.47` | 180 min |
 | [`coop --git`, repeat on Vertex AI](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `low` | **30/50 (60%)** | 0/100 | 2/50 | 173 per pair | n/a | `$55.29` | 257 min |
 
 Every run uses the step counter except the no-counter control. All runs call the model through AI Studio except the Vertex AI repeat. Runs at `medium` thinking and a messaging-only `coop` run at `low` are in progress and will be added as they finish.
+
+## `coop --git` at `medium` Thinking: Best Run So Far
+
+At `medium` thinking (Google's default for this model), `coop --git` scored **38/50 (76%)**, above every run on these 50 pairs including all three `solo` runs (36, 32, and 34). Against `coop --git` at `low`, 8 pairs passed only at `medium` and none only at `low` (exact two-sided test, p = 0.008); against `high`, 4 and 0. It solved 2 pairs no `solo` run has solved (`huggingface_datasets_task/3997` (2,4), `samuelcolvin_dirty_equals_task/43` (3,7)). Both `pallets_click_task/2068` pairs passed: instead of working around the line both features need, one agent changed it for both. Cost was `$1.63` per pair, between `low` (`$0.80`) and `high` (`$1.92`). The matching `solo` run at `medium` is in progress.
 
 ## `solo` Capability Ceiling: `low` vs. `high` Thinking
 
