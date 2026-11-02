@@ -14,6 +14,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Team-size experiment with 3 and 4 agents (later) | | `coop` and `team` already start one agent per feature (`-f 1,2,3` runs 3 agents), and `team3_250` / `team3_all` list three-feature groups. Blocker: the grader only checks two features (the local path uses the first two; the batch path crashes on three). Extend it to merge all patches and require every feature's tests to pass. |
 | Send the submit-reminder crash fix upstream | | Fixed in our fork (see [harness_limits.md](harness_limits.md)). Rebase the fix onto the latest upstream commit and open a pull request on `cooperbench/CooperBench`. |
 | Confirm `HIGH` thinking with the team | | Our status report left the thinking setting open. Share [model_config.md](model_config.md). |
+| Keep agents' "still running" signal alive during long model calls | | During peak hours a Vertex AI call can wait up to 10 minutes; the signal is refreshed only between turns and expires after 600 seconds, so partners get false "[colleague] is no longer running" notices. Refresh it while a model call is in flight. Plain bug fix; also worth sending upstream. See [model_config.md](model_config.md#recommended--c-per-vertex-ai-project). |
 | Fix `team` grading (after the midpoint) | | The lead's combined work is never graded. Pause `team` runs until fixed. See [details](#fix-team-grading). |
 
 ## Done

@@ -13,7 +13,7 @@ All new runs, baselines and intervention arms alike, use this setup. It is the u
 | Model and provider | `-m vertex_ai/gemini-3.8-flash` (`VERTEXAI_PROJECT` in `.env`, `VERTEXAI_LOCATION=global`, `gcloud` ADC) |
 | Agent config | `--agent-config configs/gemini_3_8_flash_high.yaml` |
 | Step limit and compaction | Upstream defaults: 100 steps, compaction at 28K tokens |
-| Concurrency | `-c 10` per Vertex AI project (for AI Studio `gemini/*` keys, see [Recommended `-c` per API key](#recommended--c-per-api-key)) |
+| Concurrency | Per Vertex AI project: `-c 10` off-peak; at peak hours `-c 10` for `solo` and `-c 4` for `coop` and `team` (see [Recommended `-c` per Vertex AI project](#recommended--c-per-vertex-ai-project); for AI Studio `gemini/*` keys, see [Recommended `-c` per API key](#recommended--c-per-api-key)) |
 | Run name | Leave out `-n`; intervention arms add a suffix (see [results_format.md](results_format.md)) |
 | Subsets | `flash_10` for the baseline screen, `flash` for intervention arms |
 
@@ -69,12 +69,16 @@ On `VERTEXAI_LOCATION=global`, Vertex AI uses Dynamic Shared Quota rather than a
 
 `-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`). Keep the concurrent agent count equal across compared runs.
 
-| Model, thinking | Compaction | Agents per project | `solo` | `coop`, `coop --git`, `team` | Measured |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| `gemini-3.8-flash`, high (reference) | 28K | 20 | `-c 10` | `-c 10` | `flash_10`, 20 agents: over 3M input tok/min, 0 retries |
-| `gemini-3.8-flash`, any thinking level | 64K | 10 (provisional) | `-c 10` | `-c 5` | Being measured on `flash` (500 steps, `low`); update after the first runs |
+Use different settings for **peak hours** (US business hours, Monday to Friday 9:00 to 17:00 Pacific) and **off-peak** (nights and weekends). During peak hours, `gemini-3.8-flash` on Vertex AI has little spare shared capacity: requests over the project's base quota can wait in a server-side queue for up to 10 minutes before failing with a 503 and being retried. In `solo` that only adds waiting time. In `coop` and `team` it can change results: an agent refreshes its "still running" signal only between turns, and that signal expires after 600 seconds, so when one turn stalls that long its partner is told "[colleague] is no longer running" and may carry on alone.
 
-At 64K each agent sends about twice the tokens per minute it sends at 28K (see the table below), so the 64K row starts at half the agents. Raise it only if a full run logs few `429` retries.
+| Model | Setting | Compaction | Off-peak | Peak hours | Evidence |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `gemini-3.8-flash` | `solo` | 28K or 64K | `-c 10` | `-c 10` | 64K, `low`, 10 agents at peak: 64 retries over 50 pairs (about 2 per agent-hour); retries only add time |
+| `gemini-3.8-flash` | `coop`, `coop --git`, `team` | 28K | `-c 10` | `-c 4` | 28K, `low`, 20 agents: 15 to 27 retries per 50 pairs off-peak, no false "no longer running" notices; at peak 72 retries per 40 pairs and false notices on 8 pairs |
+| `gemini-3.8-flash` | `coop`, `coop --git`, `team` | 64K | `-c 5` (provisional) | `-c 4` (provisional) | 64K, `low`, 10 agents at peak: false notices on 4 of 38 pairs |
+| `gemini-3-flash-preview` | any | 28K | `-c 10` | `-c 10` | 20 agents: 5.5M to 6.8M input tok/min with 0 retries, off-peak and peak |
+
+Lower concurrency reduces the false notices but does not remove them: a 1-pair peak-hour run still had one. After each `coop` or `team` run, count the pairs whose trajectories contain "is no longer running]" alongside the retry counts, and prefer off-peak hours for runs whose results will be compared. The lasting fix is a harness change that refreshes the signal during long model calls (see [tasks.md](tasks.md)).
 
 **Run names do not include the provider.** `vertex_ai/gemini-3.8-flash` and `gemini/gemini-3.8-flash` produce the same run name, and the runner skips every pair that already has a result in that folder. When repeating an AI Studio run on Vertex AI, add a suffix (for example `RUN_SUFFIX=saturation-low-vertex`) so it does not reuse the old folder.
 
