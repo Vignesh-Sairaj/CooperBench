@@ -4,7 +4,7 @@
 
 ## Experiment
 
-Two agents, one feature each, with messaging and a shared git remote, using the older `gemini-3-flash-preview` model at `minimal` thinking (what upstream CooperBench uses when no thinking level is set). Budgets are the upstream defaults (100 steps, compaction at 28K). We ran it to reproduce a teammate's vanilla-upstream run with this model (3/10 with 4 merge conflicts).
+Two agents, one feature each, with messaging and a shared git remote, using the older `gemini-3-flash-preview` model at `minimal` thinking (what upstream CooperBench uses when no thinking level is set). Budgets are the upstream defaults (100 steps, compaction at 28K). It checks that the fork reproduces unmodified upstream with this model.
 
 ## Results
 
@@ -39,8 +39,8 @@ Two agents, one feature each, with messaging and a shared git remote, using the 
 
 ## Observations
 
-- 4/10, close to the teammate's 3/10, with the same merge outcome: 6 pairs merged (5 cleanly, 1 with identical patches) and 4 had merge conflicts (hers: 6 clean, 4 conflicts). These are the first merge conflicts in any of our runs on `flash_10`; with `gemini-3.8-flash`, none of our `coop` runs had one.
-- All 20 agents submitted, none reached the step limit, and agents averaged 35 steps (the teammate's averaged about 56). Agents sent 15 messages per pair (hers: 14), yet the patches still collided in `go_chi_task/26`, `openai_tiktoken_task/0`, `pillow_task/290`, and `typst_task/6554`.
+- 4/10. The same configuration on unmodified upstream code scored 3/10 with the same merge outcome: 6 pairs merged and 4 had merge conflicts in both runs (here 5 cleanly and 1 with identical patches). These were the first merge conflicts in any `flash_10` run; with `gemini-3.8-flash` there had been none.
+- All 20 agents submitted, none reached the step limit, and agents averaged 35 steps (about 56 on upstream code). Agents sent 15 messages per pair (14 on upstream code), yet the patches still collided in `go_chi_task/26`, `openai_tiktoken_task/0`, `pillow_task/290`, and `typst_task/6554`.
 - Compared with `solo` on the same model and thinking level (7/10), splitting the work lost 3 pairs, which matches the paper's finding that `coop` does worse than `solo`.
 - Caveat: 69 calls were retried because of the API rate limit. This model at `minimal` thinking answers very quickly, so even 6 agents at once exceed the per-minute token limit. Retries slow agents down and can make a partner give up waiting for a reply.
 

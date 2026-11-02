@@ -4,7 +4,7 @@
 
 ## Experiment
 
-Two agents, one feature each, with messaging and a shared git remote, using `gemini-3.8-flash` at `low` thinking (what upstream CooperBench uses for this model when no thinking level is set; our other runs use `high`). Budgets are the upstream defaults (100 steps, compaction at 28K). We ran it to reproduce a teammate's vanilla-upstream run (7/10) and to compare with our `high`-thinking run under the same budgets (3/10).
+Two agents, one feature each, with messaging and a shared git remote, using `gemini-3.8-flash` at `low` thinking (what upstream CooperBench uses for this model when no thinking level is set; the reference setup uses `high`). Budgets are the upstream defaults (100 steps, compaction at 28K). It checks that the fork reproduces unmodified upstream with this model, and compares with the `high`-thinking run under the same budgets (3/10).
 
 ## Results
 
@@ -39,9 +39,9 @@ Two agents, one feature each, with messaging and a shared git remote, using `gem
 
 ## Observations
 
-- 7/10, the same score as the teammate's run and well above our `high`-thinking run with the same budgets (3/10). As in her run, `coop` beat `solo` for this model (`solo` at `low`: 6/10 here, 4/10 in hers), though by only 1 pair here.
-- Fewer agents ran out of steps than at `high`: 5 of 20 stopped at step 100 (`high`: 13 of 20). Context was summarized 0.8 times per agent on average, and agents sent 22 messages per pair (hers: 23).
-- Merges: 7 clean, 2 pairs with identical patches, and 1 conflict (`go_chi_task/26`, where both agents also hit the step limit). Her run had 10 clean merges.
+- 7/10, the same as the same configuration on unmodified upstream code (7/10), and well above the `high`-thinking run with the same budgets (3/10). In both runs `coop` beat `solo` for this model (`solo` at `low`: 6/10 on the fork, 4/10 on upstream code), here by 1 pair.
+- Fewer agents ran out of steps than at `high`: 5 of 20 stopped at step 100 (`high`: 13 of 20). Context was summarized 0.8 times per agent on average, and agents sent 22 messages per pair (23 on upstream code).
+- Merges: 7 clean, 2 pairs with identical patches, and 1 conflict (`go_chi_task/26`, where both agents also hit the step limit). The upstream-code run had 10 clean merges.
 - Caveat: 105 calls were retried because of the API rate limit, even with only 6 agents at a time. At `low` thinking this model answers fast enough to exceed the per-minute token limit. Retries can make a partner give up waiting for a reply.
 
 ## Run Details

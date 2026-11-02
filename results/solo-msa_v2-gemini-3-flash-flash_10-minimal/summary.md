@@ -4,7 +4,7 @@
 
 ## Experiment
 
-One agent implements both features with the older `gemini-3-flash-preview` model at `minimal` thinking, the lowest level, which is what upstream CooperBench uses when no thinking level is set. Budgets are the upstream defaults (100 steps, compaction at 28K). We ran it to reproduce a teammate's run of vanilla upstream with this model (7/10), and to see how this model behaves compared with `gemini-3.8-flash`, which our other runs use.
+One agent implements both features with the older `gemini-3-flash-preview` model at `minimal` thinking, the lowest level, which is what upstream CooperBench uses when no thinking level is set. Budgets are the upstream defaults (100 steps, compaction at 28K). It checks that the fork reproduces unmodified upstream with this model, and shows how this model behaves compared with `gemini-3.8-flash`, the model in the reference setup.
 
 ## Results
 
@@ -39,7 +39,7 @@ One agent implements both features with the older `gemini-3-flash-preview` model
 
 ## Observations
 
-- 7/10, the same score as the teammate's run (7/10). The agents behaved like hers too: 37 steps per pair on average (hers: 39), no agent reached the step limit (hers: none), and context was summarized 0.5 times per agent (hers: 0.7). Thought summaries were on here and off in hers, which made no visible difference.
+- 7/10. An independent run of the same configuration on unmodified upstream code (thought summaries off) also scored 7/10, with similar behavior: 37 vs. 39 steps per pair on average, no agent at the step limit in either, and 0.5 vs. 0.7 compactions per agent.
 - This model at `minimal` thinking produces no reasoning tokens and finishes quickly: every agent submitted, in 15 to 61 steps, for `$1.39` in total. `gemini-3.8-flash` at `high` thinking used all 100 steps on 9 to 10 of 10 pairs in the same setup.
 - Failures: `pallets_jinja_task/1559` ended without pushing anything, and in `pallets_jinja_task/1621` and `pillow_task/290` only the second feature passed.
 

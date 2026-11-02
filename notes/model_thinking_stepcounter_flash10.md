@@ -2,9 +2,9 @@
 
 ## Summary
 
-We ran two follow-ups to the [step limit and compaction experiments](baseline_ablation_flash10.md): a comparison of two Gemini models at different thinking levels, and a per-turn step counter. All runs use `flash_10` with upstream budgets (100 steps, 28K compaction) unless noted.
+Two follow-ups to the [step limit and compaction experiments](baseline_ablation_flash10.md): a comparison of two Gemini models at different thinking levels, and a per-turn step counter. All runs use `flash_10` with upstream budgets (100 steps, 28K compaction) unless noted.
 
-- **We reproduced a teammate's runs of vanilla upstream.** Upstream's default thinking levels on our setup landed within 2 pairs of all four of her scores.
+- **The fork reproduces unmodified upstream.** With upstream's default thinking levels, runs on the fork and on unmodified upstream code agree within 2 pairs on all four comparisons.
 - **The paper's "`solo` beats `coop`" holds for the older model, not the newer one.** `gemini-3-flash-preview` does as well or better alone at every thinking level, and its `coop` runs had 3 to 4 merge conflicts each. `gemini-3.8-flash` had 0 to 1 merge conflicts per run, and `coop` matched or beat `solo`.
 - **The thinking level decides whether `gemini-3.8-flash` finishes within 100 steps.** At `low` it passed 6/10 `solo` and 7/10 `coop --git`. At `high` it passed 0 to 1 and 3/10, because agents ran out of steps before pushing.
 - **Showing the step count on every turn fixes the 100-step budget.** With "Step n of 100: k left" after each turn, `gemini-3.8-flash` at `high` went from 0 to 1 to **7/10** `solo` and from 3 to **8/10** `coop --git`, at the same cost. That matches 250 steps with 64K compaction at under half the cost.
@@ -19,17 +19,17 @@ We ran two follow-ups to the [step limit and compaction experiments](baseline_ab
 
 ## Model and Thinking Level
 
-A teammate ran vanilla upstream with both models and got different results from ours. These runs reproduce hers and separate the effect of the model from the thinking level (100 steps, 28K compaction, 3 pairs at a time like hers):
+Runs on unmodified upstream code (`63b9d44`, no agent config, so each model's default thinking level) scored differently from the reference setup (`gemini-3.8-flash` at `high`). The runs below repeat them on the fork and separate the effect of the model from the thinking level. All use 100 steps, 28K compaction, and 3 pairs at a time:
 
-| Model, thinking | `solo` | Teammate `solo` | `coop --git` | Teammate `coop --git` | Merge conflicts |
+| Model, thinking | `solo` (fork) | `solo` (upstream code) | `coop --git` (fork) | `coop --git` (upstream code) | Merge conflicts (fork / upstream code) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `gemini-3-flash-preview`, minimal | 7/10 | 7/10 | 4/10 | 3/10 | 4 (hers: 4) |
-| `gemini-3-flash-preview`, low | 5/10 | | 5/10 | | 4 |
-| `gemini-3-flash-preview`, high | 5/10 | | 4/10 | | 3 |
-| `gemini-3.8-flash`, low | 6/10 | 4/10 | 7/10 | 7/10 | 1 (hers: 0) |
-| `gemini-3.8-flash`, high | 1/10, 0/10 | | 3/10 | | 0 |
+| `gemini-3-flash-preview`, minimal | 7/10 | 7/10 | 4/10 | 3/10 | 4 / 4 |
+| `gemini-3-flash-preview`, low | 5/10 | | 5/10 | | 4 / |
+| `gemini-3-flash-preview`, high | 5/10 | | 4/10 | | 3 / |
+| `gemini-3.8-flash`, low | 6/10 | 4/10 | 7/10 | 7/10 | 1 / 0 |
+| `gemini-3.8-flash`, high | 1/10, 0/10 | | 3/10 | | 0 / |
 
-- **Reproduction:** all four comparisons are within 2 pairs, a normal amount of variation on 10 pairs. We kept thought summaries on and she had them off, which made no visible difference.
+- **Reproduction:** all four comparisons are within 2 pairs, a normal amount of variation on 10 pairs. Thought summaries were on in the fork runs and off in the upstream-code runs, which made no visible difference.
 - **`gemini-3-flash-preview`:** more thinking did not help. At `high` it reasoned about 4,500 tokens per call (none at `minimal` or `low`), took 117 minutes instead of 12, and cost about 9 times as much, for 5/10 instead of 7/10.
 - **`gemini-3.8-flash`, `low` vs. `high` (`solo`):** at `low`, 4 of 10 agents hit the step limit and agents compacted 1.7 times each; at `high`, 9 to 10 of 10 hit the limit and compacted 8 to 9 times each.
 - **Merge conflicts depend on the model:** `gemini-3-flash-preview` agents produced conflicting patches on 3 to 4 of 10 pairs in every `coop` run; `gemini-3.8-flash` agents on 0 to 1.

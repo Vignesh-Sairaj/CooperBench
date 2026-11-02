@@ -4,7 +4,7 @@
 
 ## Experiment
 
-One agent implements both features with `gemini-3.8-flash` at `low` thinking (what upstream CooperBench uses for this model when no thinking level is set; our other runs use `high`). Budgets are the upstream defaults (100 steps, compaction at 28K). We ran it to reproduce a teammate's vanilla-upstream run (4/10) and to see what the thinking level alone changes compared with our `high` runs (1/10 and 0/10).
+One agent implements both features with `gemini-3.8-flash` at `low` thinking (what upstream CooperBench uses for this model when no thinking level is set; the reference setup uses `high`). Budgets are the upstream defaults (100 steps, compaction at 28K). It checks that the fork reproduces unmodified upstream with this model, and isolates what the thinking level changes compared with the `high`-thinking runs (1/10 and 0/10).
 
 ## Results
 
@@ -39,8 +39,8 @@ One agent implements both features with `gemini-3.8-flash` at `low` thinking (wh
 
 ## Observations
 
-- 6/10, within run-to-run variation of the teammate's 4/10, and far above our two `high`-thinking runs with the same budgets (1/10 and 0/10).
-- Lower thinking made agents finish sooner: 80 steps per pair on average, 4 of 10 agents stopped at the step limit (`high`: 9 to 10 of 10), and context was summarized 1.7 times per agent (`high`: a median of 8 to 9). The teammate's run summarized 4.0 times per agent, the one clear difference from ours.
+- 6/10. The same configuration on unmodified upstream code scored 4/10, within run-to-run variation. Both are far above the two `high`-thinking runs with the same budgets (1/10 and 0/10).
+- Lower thinking made agents finish sooner: 80 steps per pair on average, 4 of 10 agents stopped at the step limit (`high`: 9 to 10 of 10), and context was summarized 1.7 times per agent (`high`: a median of 8 to 9). The upstream-code run summarized 4.0 times per agent, the one clear difference between the two.
 - The thinking level, not just the budgets, decides whether `gemini-3.8-flash` finishes within 100 steps.
 - No API rate-limit retries.
 
