@@ -1,0 +1,18 @@
+# Variant config: Message Delivery Timing (low thinking, gemini-3-flash-preview).
+# Holds non-blocking incoming messages until natural workflow boundaries (clean test/git/PR
+# commands, messaging turns, or explore-to-edit transitions) or 4 steps, while delivering
+# blocking (--wait) messages immediately.
+# Pass via: MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/delivery_timing_low.yaml RUN_SUFFIX=low-delivery-timing tools/run.sh coop flash_10 10 --git
+agent:
+  cost_limit: 40.0
+  step_counter: true
+  delivery_timing: true
+  delivery_max_hold_steps: 4
+  delivery_boundary_mode: natural
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: low
+      includeThoughts: true

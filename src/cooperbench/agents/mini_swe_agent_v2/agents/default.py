@@ -5,13 +5,24 @@ or https://minimal-agent.com for a tutorial on the basic building principles.
 import json
 import logging
 import re
+import time
 import traceback
 from pathlib import Path
+from typing import Any, Literal
 
 from jinja2 import StrictUndefined, Template
 from pydantic import BaseModel
 
 from cooperbench.agents.mini_swe_agent_v2 import Environment, Model, __version__
+from cooperbench.agents.mini_swe_agent_v2.agents.communication import (
+    CommunicationCoordinator,
+    CommunicationSettings,
+    NoSendCommand,
+    ParsedSendBatch,
+    SendCall,
+    SendParseError,
+    strip_compaction_board,
+)
 from cooperbench.agents.mini_swe_agent_v2.connectors.messaging import MessagingConnector
 from cooperbench.agents.mini_swe_agent_v2.exceptions import InterruptAgentFlow, LimitsExceeded
 from cooperbench.agents.mini_swe_agent_v2.utils.serialize import recursive_merge
@@ -118,6 +129,26 @@ class AgentConfig(BaseModel):
         "no preamble."
     )
     """Prompt appended to conversation history when requesting a summary."""
+    delivery_timing: bool = False
+    """Hold non-blocking incoming messages until natural turn boundaries or step ceiling."""
+    delivery_max_hold_steps: int = 4
+    """Maximum steps a buffered message may be held before forced delivery."""
+    delivery_boundary_mode: Literal["natural", "periodic"] = "natural"
+    """Flush buffered messages at natural workflow boundaries or every N steps."""
+    message_threading: bool = False
+    """Assign monotonic message IDs (m1, m2, ...) and track open/resolved threads."""
+    thread_pin_mode: Literal["every_turn", "compaction_only"] = "every_turn"
+    """Render active threads in every turn's observation footer or only on compaction."""
+    thread_max_pinned: int = 3
+    """Maximum open threads shown in the per-turn observation footer."""
+    thread_require_resolved_on_submit: bool = False
+    """Remind an exiting agent once if incoming threads from a live peer remain open."""
+    message_intents: bool = False
+    """Require explicit speech-act intents (Proposal, Request, Response, ACK, FYI)."""
+    intent_filter_fyi: bool = False
+    """Suppress non-blocking incoming FYI updates on the receiver side."""
+    intent_presubmit_check: bool = False
+    """Remind an exiting agent once if incoming Request/Proposal items remain unanswered."""
 
 
 class DefaultAgent:
@@ -148,6 +179,21 @@ class DefaultAgent:
         self._compaction_count: int = 0
         self._segments: list[dict] = []
         self._current_segment_messages: list[dict] = []
+        self._comm_coord = CommunicationCoordinator(
+            agent_id=agent_id,
+            settings=CommunicationSettings(
+                delivery_timing=self.config.delivery_timing,
+                delivery_max_hold_steps=self.config.delivery_max_hold_steps,
+                delivery_boundary_mode=self.config.delivery_boundary_mode,
+                message_threading=self.config.message_threading,
+                thread_pin_mode=self.config.thread_pin_mode,
+                thread_max_pinned=self.config.thread_max_pinned,
+                thread_require_resolved_on_submit=self.config.thread_require_resolved_on_submit,
+                message_intents=self.config.message_intents,
+                intent_filter_fyi=self.config.intent_filter_fyi,
+                intent_presubmit_check=self.config.intent_presubmit_check,
+            ),
+        )
 
     def log(self, msg: str):
         """Log message with agent prefix."""
@@ -251,40 +297,81 @@ class DefaultAgent:
         """
         if not self.comm:  # solo has no peer branch to compare against; left as-is
             return False
-        if getattr(self, "_submit_nudges", 0) >= self.MAX_SUBMIT_NUDGES:
-            return False  # it was told twice; ending with nothing is now its own choice
-        if self._opened_pr():
-            return False
 
-        agent = self.comm.agent_id
-        dirty = (self.env.execute({"command": "git status --porcelain"}).get("output") or "").strip()
-        ahead = (
-            self.env.execute({"command": f"git rev-list --count {GIT_REMOTE}/{agent}..HEAD 2>/dev/null"})
-            .get("output", "")
-            .strip()
-        )
-        unpushed = ahead not in ("", "0")
-        if not dirty and not unpushed:
-            return False  # nothing to lose: it genuinely has no work to submit
+        limits_exhausted = 0 < self.config.step_limit <= self.n_calls or 0 < self.config.cost_limit <= self.cost
+        if self._comm_coord.enabled and not limits_exhausted and self._comm_coord.has_held_messages:
+            if getattr(self, "_held_flush_nudges", 0) < 2:
+                self._held_flush_nudges = getattr(self, "_held_flush_nudges", 0) + 1
+                flushed = self._comm_coord.flush_all_held(
+                    current_step=self.n_calls,
+                    is_awaited_fn=getattr(self.comm, "is_awaited_by", None),
+                )
+                for line in flushed:
+                    self.add_messages(self.model.format_message(role="user", content=line))
+                self.add_messages(
+                    self.model.format_message(
+                        role="user",
+                        content=(
+                            "Buffered message(s) from your colleague arrived while you were working and "
+                            "have been delivered above. Review them and reconcile if needed, then run "
+                            "`echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` again."
+                        ),
+                    )
+                )
+                return True
 
-        self._submit_nudges = getattr(self, "_submit_nudges", 0) + 1
-        held = "uncommitted changes" if dirty else "commits that are not pushed"
-        self.log(f"SUBMIT NUDGE {self._submit_nudges} for {agent}: {held}, no PR")
-        self.add_messages(
-            self.model.format_message(
-                role="user",
-                content=(
-                    f"You have not submitted anything. Your work is still local ({held}) and "
-                    f"no pull request exists, so it would be graded as an empty submission.\n\n"
-                    f"    git add <the files you want to submit>\n"
-                    f'    git commit -m "..."\n'
-                    f"    git push {GIT_REMOTE} HEAD:{agent}\n"
-                    f'    gh pr create --title "..." --body "..."\n\n'
-                    f"Then echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT again."
-                ),
+        if getattr(self, "_submit_nudges", 0) < self.MAX_SUBMIT_NUDGES and not self._opened_pr():
+            agent = self.comm.agent_id
+            dirty = (self.env.execute({"command": "git status --porcelain"}).get("output") or "").strip()
+            ahead = (
+                self.env.execute({"command": f"git rev-list --count {GIT_REMOTE}/{agent}..HEAD 2>/dev/null"})
+                .get("output", "")
+                .strip()
             )
-        )
-        return True
+            unpushed = ahead not in ("", "0")
+            if dirty or unpushed:
+                self._submit_nudges = getattr(self, "_submit_nudges", 0) + 1
+                held = "uncommitted changes" if dirty else "commits that are not pushed"
+                self.log(f"SUBMIT NUDGE {self._submit_nudges} for {agent}: {held}, no PR")
+                self.add_messages(
+                    self.model.format_message(
+                        role="user",
+                        content=(
+                            f"You have not submitted anything. Your work is still local ({held}) and "
+                            f"no pull request exists, so it would be graded as an empty submission.\n\n"
+                            f"    git add <the files you want to submit>\n"
+                            f'    git commit -m "..."\n'
+                            f"    git push {GIT_REMOTE} HEAD:{agent}\n"
+                            f'    gh pr create --title "..." --body "..."\n\n'
+                            f"Then echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT again."
+                        ),
+                    )
+                )
+                return True
+
+        if self._comm_coord.enabled and not limits_exhausted and getattr(self, "_obligation_nudges", 0) < 1:
+            pending = self._comm_coord.pending_presubmit_obligations(
+                is_peer_exited_fn=getattr(self.comm, "has_exited", None)
+            )
+            if pending:
+                self._obligation_nudges = getattr(self, "_obligation_nudges", 0) + 1
+                bullet_list = "\n".join(pending)
+                self.log(f"OBLIGATION NUDGE for {self.comm.agent_id}: {len(pending)} pending item(s)")
+                self.add_messages(
+                    self.model.format_message(
+                        role="user",
+                        content=(
+                            "Before finishing, you have unanswered coordination items from a colleague "
+                            "who is still working:\n"
+                            f"{bullet_list}\n\n"
+                            "Reply with `send_message` (and push any needed updates to your PR), then run "
+                            "`echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` again."
+                        ),
+                    )
+                )
+                return True
+
+        return False
 
     def _opened_pr(self) -> bool:
         """Whether this agent's PR exists on the shared remote.
@@ -306,23 +393,35 @@ class DefaultAgent:
             if hasattr(self.comm, "heartbeat"):
                 self.comm.heartbeat()
             messages = self.comm.receive()
-            for msg in messages:
-                ts = msg.get("timestamp", "")[:19].replace("T", " ")
-                self.log(f"INBOX: [{msg['from']} @ {ts}] {msg['content']}")
-                # Say so when the sender is stalled on us. Without it the message reads as
-                # ordinary context and gets deprioritised behind the agent's own edit loop.
-                blocked = ""
-                if getattr(self.comm, "is_awaited_by", None) and self.comm.is_awaited_by(msg["from"]):
-                    blocked = (
-                        f" — {msg['from']} is BLOCKED waiting for your reply and cannot continue"
-                        f" until you answer. Reply with send_message before your next command."
-                    )
-                self.add_messages(
-                    self.model.format_message(
-                        role="user",
-                        content=f"[Message from {msg['from']}{blocked}]: {msg['content']}",
-                    )
+            if self._comm_coord.enabled:
+                for msg in messages:
+                    ts = msg.get("timestamp", "")[:19].replace("T", " ")
+                    self.log(f"INBOX: [{msg['from']} @ {ts}] {msg['content']}")
+                rendered = self._comm_coord.receive_for_step(
+                    messages,
+                    current_step=self.n_calls,
+                    is_awaited_fn=getattr(self.comm, "is_awaited_by", None),
                 )
+                for line in rendered:
+                    self.add_messages(self.model.format_message(role="user", content=line))
+            else:
+                for msg in messages:
+                    ts = msg.get("timestamp", "")[:19].replace("T", " ")
+                    self.log(f"INBOX: [{msg['from']} @ {ts}] {msg['content']}")
+                    # Say so when the sender is stalled on us. Without it the message reads as
+                    # ordinary context and gets deprioritised behind the agent's own edit loop.
+                    blocked = ""
+                    if getattr(self.comm, "is_awaited_by", None) and self.comm.is_awaited_by(msg["from"]):
+                        blocked = (
+                            f" — {msg['from']} is BLOCKED waiting for your reply and cannot continue"
+                            f" until you answer. Reply with send_message before your next command."
+                        )
+                    self.add_messages(
+                        self.model.format_message(
+                            role="user",
+                            content=f"[Message from {msg['from']}{blocked}]: {msg['content']}",
+                        )
+                    )
             self._announce_departed_peers()
         # In team mode, also refresh the shared task list so the LLM
         # sees the live state of who's working on what before its next
@@ -375,7 +474,15 @@ class DefaultAgent:
 
         self._close_current_segment("solver")
 
-        summarizer_input = prefix + old_turns
+        summarizer_turns = (
+            [
+                {**m, "content": strip_compaction_board(m["content"])} if isinstance(m.get("content"), str) else m
+                for m in old_turns
+            ]
+            if self._comm_coord.enabled
+            else old_turns
+        )
+        summarizer_input = prefix + summarizer_turns
         summary_msg = summarize_fn(
             summarizer_input,
             summary_prompt=self.config.compaction_summary_prompt,
@@ -391,7 +498,16 @@ class DefaultAgent:
             }
         )
 
-        self.messages = prefix + [summary_msg] + recent_turns
+        solver_summary_msg = summary_msg
+        if self._comm_coord.enabled:
+            board = self._comm_coord.render_compaction_board()
+            if board:
+                solver_summary_msg = {
+                    **summary_msg,
+                    "content": f"{summary_msg.get('content', '')}\n\n{board}",
+                }
+
+        self.messages = prefix + [solver_summary_msg] + recent_turns
         self._compaction_count += 1
         self.log(
             f"Compaction #{self._compaction_count}: {self._last_prompt_tokens} prompt tokens -> compacted "
@@ -440,6 +556,45 @@ class DefaultAgent:
                 continue
 
             cmd = action.get("command", "")
+            if self.comm and self._comm_coord.enabled:
+                match self._comm_coord.parse_send_command(cmd):
+                    case NoSendCommand():
+                        env_out = self.env.execute(action)
+                        self._comm_coord.record_action(
+                            command=cmd,
+                            returncode=int(env_out.get("returncode", 0)),
+                            sent_message=False,
+                        )
+                        outputs.append(env_out)
+                        continue
+                    case SendParseError(message=err_msg):
+                        self._comm_coord.record_action(command=cmd, returncode=1, sent_message=False)
+                        outputs.append({"output": err_msg, "returncode": 1, "exception_info": ""})
+                        continue
+                    case ParsedSendBatch(calls=calls, remaining_command=remaining):
+                        sm_results = [self._execute_comm_call(call) for call in calls]
+                        combined = "\n".join(r["output"] for r in sm_results)
+                        sm_rc = max((int(r.get("returncode", 0)) for r in sm_results), default=0)
+                        if not remaining.strip():
+                            self._comm_coord.record_action(
+                                command="",
+                                returncode=sm_rc,
+                                sent_message=(sm_rc == 0),
+                            )
+                            outputs.append({"output": combined, "returncode": sm_rc, "exception_info": ""})
+                            continue
+                        env_out = self.env.execute({**action, "command": remaining})
+                        final_rc = int(env_out.get("returncode", 0)) or sm_rc
+                        self._comm_coord.record_action(
+                            command=remaining,
+                            returncode=final_rc,
+                            sent_message=(sm_rc == 0),
+                        )
+                        env_out["output"] = combined + "\n" + env_out.get("output", "")
+                        env_out["returncode"] = final_rc
+                        outputs.append(env_out)
+                        continue
+
             if self.comm:
                 sm_matches = _parse_send_messages(cmd)
                 if not sm_matches and re.search(r"\bsend_message\b", cmd):
@@ -482,23 +637,33 @@ class DefaultAgent:
         return self.add_messages(*self._with_step_counter(list(observations)))
 
     def _with_step_counter(self, messages: list[dict]) -> list[dict]:
-        """Append "Step n of N" to the last observation of a turn when ``step_counter`` is on.
+        """Append turn footers (active threads/obligations and "Step n of N") to the last observation.
 
         The step limit alone is not actionable: compaction drops the history the agent could
         count turns from, so it cannot tell step 12 from step 95. Showing the count on every
         turn keeps it visible in the last turns that compaction always keeps.
         """
-        if not (self.config.step_counter and self.config.step_limit > 0) or not messages:
+        if not messages:
             return messages
         last = messages[-1]
         if last.get("role") == "exit" or not isinstance(last.get("content"), str):
             return messages
-        left = max(self.config.step_limit - self.n_calls, 0)
-        note = (
-            f"[Step {self.n_calls} of {self.config.step_limit}: {left} left. When no steps are left you "
-            "are stopped, and only work you have pushed and submitted is graded.]"
-        )
-        messages[-1] = {**last, "content": f"{last['content']}\n\n{note}"}
+
+        footers: list[str] = []
+        if self._comm_coord.enabled:
+            comm_note = self._comm_coord.render_turn_footer(current_step=self.n_calls)
+            if comm_note:
+                footers.append(comm_note)
+        if self.config.step_counter and self.config.step_limit > 0:
+            left = max(self.config.step_limit - self.n_calls, 0)
+            footers.append(
+                f"[Step {self.n_calls} of {self.config.step_limit}: {left} left. When no steps are left you "
+                "are stopped, and only work you have pushed and submitted is graded.]"
+            )
+        if not footers:
+            return messages
+        suffix = "".join(f"\n\n{note}" for note in footers)
+        messages[-1] = {**last, "content": f"{last['content']}{suffix}"}
         return messages
 
     def _announce_departed_peers(self) -> None:
@@ -520,6 +685,7 @@ class DefaultAgent:
             if not self.comm.has_exited(peer):
                 continue
             announced.add(peer)
+            self._comm_coord.clear_peer_obligations(peer)
             gone = getattr(self.comm, "is_unreachable", None) and self.comm.is_unreachable(peer)
             self.log(f"PEER {'UNREACHABLE' if gone else 'EXITED'}: {peer}")
             headline = (
@@ -592,6 +758,70 @@ class DefaultAgent:
         self.log(f"SENT to {recipient}: {content[:80]}...")
         self.sent_messages.append({"to": recipient, "content": content})
         return {"output": f"Message sent to {recipient}", "returncode": 0, "exception_info": ""}
+
+    def _execute_comm_call(self, call: SendCall) -> dict:
+        """Dispatch a validated SendCall when opt-in communication features are active."""
+        assert self.comm is not None
+        if call.wait and hasattr(self.comm, "send_and_wait"):
+            delivered, replies = self.comm.send_and_wait(
+                call.recipient,
+                call.content,
+                timeout=60,
+                assign_id=self.config.message_threading,
+                reply_to=call.reply_to,
+                resolve=call.resolve,
+                intent=call.intent,
+            )
+            if not delivered:
+                self._comm_coord.clear_peer_obligations(call.recipient)
+                return self._peer_gone_result(call.recipient)
+            sent_meta = dict(getattr(self.comm, "last_sent_message", None) or {})
+            self.log(f"SENT (blocking) to {call.recipient}: {call.content[:80]}...")
+            self.sent_messages.append(self._build_sent_record(call, sent_meta))
+            output = self._comm_coord.record_outgoing(call, sent_meta, current_step=self.n_calls)
+            if replies:
+                for line in self._comm_coord.record_wait_replies(replies, current_step=self.n_calls):
+                    output += f"\n\n{line}"
+            elif self.comm.has_exited(call.recipient):
+                self._comm_coord.clear_peer_obligations(call.recipient)
+                output += (
+                    f"\n\nNo reply: {call.recipient} has since completed their work and exited.\n"
+                    f"{self._peer_work_pointer(call.recipient)}"
+                )
+            return {"output": output, "returncode": 0, "exception_info": ""}
+
+        if not self.comm.send(
+            call.recipient,
+            call.content,
+            assign_id=self.config.message_threading,
+            reply_to=call.reply_to,
+            resolve=call.resolve,
+            intent=call.intent,
+        ):
+            self._comm_coord.clear_peer_obligations(call.recipient)
+            return self._peer_gone_result(call.recipient)
+        sent_meta = dict(getattr(self.comm, "last_sent_message", None) or {})
+        self.log(f"SENT to {call.recipient}: {call.content[:80]}...")
+        self.sent_messages.append(self._build_sent_record(call, sent_meta))
+        output = self._comm_coord.record_outgoing(call, sent_meta, current_step=self.n_calls)
+        return {"output": output, "returncode": 0, "exception_info": ""}
+
+    @staticmethod
+    def _build_sent_record(call: SendCall, sent_meta: dict[str, Any]) -> dict[str, Any]:
+        record: dict[str, Any] = {
+            "to": call.recipient,
+            "content": call.content,
+            "timestamp": time.time(),
+        }
+        if sent_meta.get("id"):
+            record["id"] = sent_meta["id"]
+        if call.reply_to:
+            record["reply_to"] = call.reply_to
+        if call.resolve:
+            record["resolve"] = True
+        if call.intent:
+            record["intent"] = call.intent
+        return record
 
     def _peer_gone_result(self, recipient: str) -> dict:
         """Tell the agent its peer is gone, and what to do about it.
