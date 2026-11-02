@@ -394,3 +394,187 @@ class TestMessageThreading:
         assert all(COMPACTION_BOARD_HEADING not in (m.get("content") or "") for m in second_summarizer_input)
 
 
+class TestMessageIntentsAndCombined:
+    def test_requires_valid_intent_and_supports_prefix_fallback(
+        self, comm_pair: tuple[MessagingConnector, MessagingConnector]
+    ) -> None:
+        alice_comm, _ = comm_pair
+        alice = _make_agent("agent1", alice_comm, message_intents=True)
+
+        missing = alice.execute_actions(_turn('send_message agent2 "no intent here"'))
+        assert "missing required --intent tag" in missing[-1]["content"]
+
+        invalid = alice.execute_actions(_turn('send_message --intent Chatty agent2 "bad intent"'))
+        assert "invalid --intent 'Chatty'" in invalid[-1]["content"]
+
+        ok_flag = alice.execute_actions(_turn('send_message --intent proposal agent2 "flag works"'))
+        assert "Message sent to agent2 (intent: Proposal)" in ok_flag[-1]["content"]
+
+        ok_prefix = alice.execute_actions(_turn('send_message agent2 "[Request] prefix fallback works"'))
+        assert "Message sent to agent2 (intent: Request)" in ok_prefix[-1]["content"]
+        assert alice.sent_messages[-1]["content"] == "prefix fallback works"
+        assert alice.sent_messages[-1]["intent"] == "Request"
+
+    def test_priority_sorting_and_fyi_filtering(self, comm_pair: tuple[MessagingConnector, MessagingConnector]) -> None:
+        alice_comm, bob_comm = comm_pair
+        alice = _make_agent("agent1", alice_comm, message_intents=True)
+
+        bob_comm.send("agent1", "status update", intent="FYI")
+        bob_comm.send("agent1", "need return type", intent="Request")
+        bob_comm.send("agent1", "let us split utils.py", intent="Proposal")
+
+        alice.model.queue_turn("ls")
+        alice.step()
+        injected = [m["content"] for m in alice.messages if m["role"] == "user" and "[Message from" in m["content"]]
+        assert len(injected) == 3
+        assert "Request — reply needed" in injected[0]
+        assert "Proposal — reply needed" in injected[1]
+        assert "(FYI)" in injected[2]
+
+        # Receiver with intent_filter_fyi=True drops non-blocking FYI
+        filtered_agent = _make_agent("agent1", alice_comm, message_intents=True, intent_filter_fyi=True)
+        bob_comm.send("agent1", "dropped status", intent="FYI")
+        bob_comm.send("agent1", "kept request", intent="Request")
+        filtered_agent.model.queue_turn("ls")
+        filtered_agent.step()
+        contents = "\n".join(m.get("content", "") for m in filtered_agent.messages)
+        assert "dropped status" not in contents
+        assert "kept request" in contents
+
+    def test_combined_interventions_wait_reply_ack_and_presubmit_obligation_nudge(
+        self, comm_pair: tuple[MessagingConnector, MessagingConnector]
+    ) -> None:
+        alice_comm, bob_comm = comm_pair
+        env = _StubEnv(pr_open=True, dirty=False)
+        alice = _make_agent(
+            "agent1",
+            alice_comm,
+            env=env,
+            delivery_timing=True,
+            delivery_max_hold_steps=4,
+            message_threading=True,
+            message_intents=True,
+            intent_presubmit_check=True,
+            step_limit=100,
+        )
+
+        # Step 1: Alice edits a file.
+        alice.model.queue_turn("sed -i 's/a/b/' src/a.py")
+        alice.step()
+
+        # Bob sends an FYI (should be held AND not open a thread) + a Request (urgent -> bypasses hold!).
+        bob_comm.send("agent1", "Running initial tests", assign_id=True, intent="FYI")
+        bob_comm.send("agent1", "Will you keep ConfigError in errors.py?", assign_id=True, intent="Request")
+
+        alice.model.queue_turn("sed -i 's/c/d/' src/a.py")
+        alice.step()
+        joined = "\n".join(m.get("content", "") for m in alice.messages)
+        assert "ConfigError" in joined  # Request bypassed hold immediately!
+        assert "Running initial tests" not in joined  # FYI stayed buffered!
+
+        # Alice tries to exit while m2 (Request from live Bob) is still open AND m1 (FYI) is held.
+        # First exit attempt flushes held FYI m1:
+        alice.messages.append({"role": "exit", "content": "", "extra": {"exit_status": "Submitted"}})
+        assert alice._continue_after_exit() is True
+        assert "Running initial tests" in "\n".join(m.get("content", "") for m in alice.messages)
+        assert "m1" not in alice._comm_coord._threads  # FYI did not open an unresolved thread
+
+        # Second exit attempt fires pre-submit obligation nudge once for unanswered Request m2:
+        alice.messages.append({"role": "exit", "content": "", "extra": {"exit_status": "Submitted"}})
+        assert alice._continue_after_exit() is True
+        assert "unanswered coordination items" in alice.messages[-1]["content"]
+        assert "m2" in alice.messages[-1]["content"]
+
+        # Alice answers m2 with --intent ACK --reply-to m2 (auto-resolves m2!) via --wait, and Bob replies:
+        threading.Timer(
+            0.2,
+            lambda: bob_comm.send("agent1", "Thanks!", assign_id=True, reply_to="m2", resolve=True, intent="ACK"),
+        ).start()
+        out = alice.execute_actions(
+            _turn('send_message --wait --intent ACK --reply-to m2 agent2 "Yes, ConfigError stays in errors.py"')
+        )
+        assert "thread m2: resolved" in out[-1]["content"]
+        assert "[Reply m4 from agent2" in out[-1]["content"]
+        assert alice._comm_coord._threads["m2"].status == "resolved"
+
+        # Third exit attempt succeeds cleanly!
+        alice.messages.append({"role": "exit", "content": "", "extra": {"exit_status": "Submitted"}})
+        assert alice._continue_after_exit() is False
+        assert alice.messages[-1]["role"] == "exit"
+
+    def test_presubmit_obligation_skipped_when_peer_already_exited(
+        self, comm_pair: tuple[MessagingConnector, MessagingConnector]
+    ) -> None:
+        alice_comm, bob_comm = comm_pair
+        env = _StubEnv(pr_open=True, dirty=False)
+        alice = _make_agent(
+            "agent1",
+            alice_comm,
+            env=env,
+            message_intents=True,
+            intent_presubmit_check=True,
+            step_limit=100,
+        )
+
+        bob_comm.send("agent1", "Can we share helper?", intent="Request")
+        alice.model.queue_turn("ls")
+        alice.step()
+
+        bob_comm.mark_exited(published=True)
+        alice.messages.append({"role": "exit", "content": "", "extra": {"exit_status": "Submitted"}})
+        assert alice._continue_after_exit() is False
+
+
+class TestVariantConfigs:
+    @pytest.mark.parametrize(
+        "variant_name",
+        [
+            "thinking_low_stepcounter_cap40.yaml",
+            "stepcounter_cap40.yaml",
+            "delivery_timing_high.yaml",
+            "delivery_timing_low.yaml",
+            "delivery_timing_periodic_high.yaml",
+            "delivery_timing_periodic_low.yaml",
+            "message_threading_high.yaml",
+            "message_threading_low.yaml",
+            "message_intents_high.yaml",
+            "message_intents_low.yaml",
+            "comm_combined_high.yaml",
+            "comm_combined_low.yaml",
+        ],
+    )
+    def test_variant_merges_and_renders_cleanly(self, variant_name: str) -> None:
+        repo_root = Path(__file__).resolve().parents[3]
+        variant_path = repo_root / "configs" / "variants" / variant_name
+        assert variant_path.is_file(), f"Missing variant config: {variant_path}"
+
+        with open(get_config_path("coop")) as f:
+            base_cfg = yaml.safe_load(f)
+        with open(variant_path) as f:
+            overrides = yaml.safe_load(f)
+        merged = recursive_merge(base_cfg, overrides)
+
+        agent = DefaultAgent(
+            _StubModel(),
+            _StubEnv(),
+            comm=None,
+            agent_id="agent1",
+            **merged["agent"],
+        )
+        agent.extra_template_vars.update(
+            {
+                "task": "Implement feature X.",
+                "agent_id": "agent1",
+                "agents": ["agent1", "agent2"],
+                "git_enabled": True,
+                "messaging_enabled": True,
+            }
+        )
+        rendered_sys = agent._render_template(agent.config.system_template)
+        rendered_inst = agent._render_template(agent.config.instance_template)
+        assert "colleague" in rendered_sys
+        assert "Implement feature X." in rendered_inst
+        assert "agent2" in rendered_inst
+
+        thinking_cfg = merged["model"]["model_kwargs"]["thinkingConfig"]
+        assert thinking_cfg["thinkingLevel"] in ("low", "high")
