@@ -26,7 +26,7 @@ All new runs, baselines and intervention arms alike, use this setup. It is the u
 | `coop --git` | `tools/run.sh coop flash_10 10 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
 | `team` | `tools/run.sh team flash_10 10` | `team-msa_v2-gemini-3-8-flash-flash_10` |
 
-**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. The per-turn step counter fixes most of that at the same cost ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)), and we have proposed making it standard. The thinking level and budget will be chosen from the 500-step `solo` saturation runs. Whatever the team adopts goes into the reference agent config, and every baseline is rerun on `vertex_ai/gemini-3.8-flash`.
+**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. **The per-turn step counter is now part of the standard setup:** at 100 steps it is the largest single improvement measured ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)), and at 500 steps on 50 pairs `solo` scored 36/50 with it vs. 32/50 without it at the same cost, with no pair passing only without it ([saturation_flash.md](saturation_flash.md)). The thinking level and budget will be chosen from the 500-step saturation runs. Whatever the team adopts goes into the reference agent config, and every baseline is rerun on `vertex_ai/gemini-3.8-flash`.
 
 ## Settings and Reasons
 

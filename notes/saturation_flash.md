@@ -20,8 +20,9 @@ Every run below uses `gemini-3.8-flash` on the 50-pair `flash` subset, a 500-ste
 | [`coop --git`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **30/50 (60%)** | 0/100 | 0/50 | 87 | 0 | `$39.85` | 346 min |
 | [`coop --git`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-high/summary.md) | `high` | **34/50 (68%)** | 0/100 | 0/50 | 104 | 3 | `$96.17` | 476 min |
 | [`team`](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **22/50 (44%)** | 0/100 | 30/50 | 74.5 | 0 | `$35.10` | 433 min |
+| [`solo`, no step counter](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 84 | 0 | `$25.64` | 309 min |
 
-Additional runs in progress with the same 500-step, 64K setup (messaging-only `coop` at `low`, a `solo` `low` control without the step counter, and matching runs on `core`) will be added here as they finish.
+Every run uses the step counter except the control in the last row. Runs at `medium` thinking and a messaging-only `coop` run at `low` are in progress and will be added as they finish.
 
 ## `solo` Capability Ceiling: `low` vs. `high` Thinking
 
@@ -37,6 +38,10 @@ Comparing the two `solo` runs pair by pair shows what `gemini-3.8-flash` can sol
 - **More reasoning tokens did not raise accuracy.** At `high`, agents generated about 220K reasoning tokens each (11.0M across the run), compacted a median of 7 times, and cost `$2.20` per pair vs. `$0.51` at `low`, solving only 1 pair `low` missed while losing 3.
 - **250 steps with the counter covers nearly all `low` passes.** Of the 36 `solo` `low` passes, 22 finished within 100 steps and 35 within 250 steps (max 345). At `high`, 26 of 34 passes finished within 250 steps and 8 needed 295 to 500 steps.
 - **The 13 pairs unsolved by `solo` at both levels:** `dspy_task/8394` (3,5), `go_chi_task/56` (1,5), `huggingface_datasets_task/3997` (2,4), `llama_index_task/18813` (1,5) and (2,5), `openai_tiktoken_task/0` (2,9), `pallets_click_task/2068` (2,10), `pallets_click_task/2800` (1,3), `pillow_task/25` (1,5), `pillow_task/290` (2,3) and (4,5), `pillow_task/68` (1,5), and `samuelcolvin_dirty_equals_task/43` (3,7). In nearly all of these, one feature passed its hidden tests and the other missed an edge case in the specification.
+
+## Step Counter With Ample Budget
+
+Turning the step counter off in `solo` at `low` thinking (everything else identical) lowered the score from 36/50 to 32/50 at the same cost (`$25.64` vs. `$25.70`). Pair by pair, 32 passed in both, 14 failed in both, 4 passed only with the counter, and none passed only without it (exact two-sided test, p = 0.125). Step use was nearly identical (median 84 per pair in both). One loss was a budget failure: without the counter, the agent on `pillow_task/290` (3,5) used all 500 steps, while with it the agent finished in 180 and passed. The other three were on-time submissions with one feature failing. The counter costs nothing and hurt no pair, so it is part of the standard setup.
 
 ## `solo` vs. `coop --git` at `low` Thinking
 

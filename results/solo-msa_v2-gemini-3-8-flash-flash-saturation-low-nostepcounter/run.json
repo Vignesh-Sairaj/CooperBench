@@ -1,0 +1,46 @@
+{
+  "run_name": "solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter",
+  "setting": "solo",
+  "git_enabled": false,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3.8-flash",
+  "subset": "flash",
+  "concurrency": 2,
+  "key_slot": null,
+  "command": "cooperbench run -n solo-msa_v2-gemini-3-8-flash-flash-shard1of2-saturation-low-nostepcounter -s flash-shard1of2 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/saturation_low_nostepcounter.yaml --setting solo -c 2 --backend docker --dataset-dir logs/_shards/flash-shard1of2",
+  "git_commit": "9dfb37a8588e7d41b218b227bc812a254edca0b1",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/saturation_low_nostepcounter.yaml",
+  "agent_config": "# Variant config: 500-step saturation control without the per-turn step counter.\n# 500 steps, compaction at 64K tokens, low thinking, $40 per-agent cost cap,\n# and containers kept alive for 10 hours (same as saturation_low.yaml except step_counter is off).\n# Pass via: AGENT_CONFIG=configs/variants/saturation_low_nostepcounter.yaml RUN_SUFFIX=saturation-low-nostepcounter tools/run.sh solo ...\nagent:\n  cost_limit: 40.0\n  step_limit: 500\n  compaction_token_trigger: 64000\n\nenvironment:\n  container_timeout: \"10h\"\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 500,
+    "compaction_token_trigger": 64000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-02T05:40:45.934427",
+  "completed_at": "2026-11-02T10:54:00.647327",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter",
+  "headline": {
+    "pairs": 50,
+    "passed": 32,
+    "pass_rate": 0.64,
+    "merge_conflicts": 0,
+    "agents_at_step_limit": 1,
+    "agents_errored": 0,
+    "cost_usd": 25.6392,
+    "cost_per_pair_usd": 0.5128,
+    "wall_minutes": 308.7
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1772360,
+    "median_input_tokens_per_min": 403139,
+    "peak_calls_per_min": 54,
+    "total_retries": 25,
+    "rate_limit_retries": 24,
+    "server_busy_retries": 1
+  }
+}
