@@ -5,7 +5,7 @@ One row per run exported to `results/`. Each run's `summary.md` has the per-pair
 How to read the table:
 
 - **Setting:** `solo` is one agent implementing both features. `coop` is two agents, one feature each, who can message each other. `coop --git` adds a shared git remote where they can push and pull each other's branches. `team` is a lead plus a member with a shared task list.
-- **Subset:** `flash_10` is 10 hand-picked feature pairs (one per task, 9 repos), used for cheap screening.
+- **Subset:** `flash_10` is 10 hand-picked feature pairs (one per task, 9 repos), used for cheap screening. `core` is 10 pairs sampled to represent the full benchmark, including three pairs where both features change the same function.
 - **Step limit:** the maximum number of model responses per agent. The agent is then stopped, and only work it pushed counts. Upstream default: 100.
 - **Compaction:** once a request reaches this many tokens, the harness replaces older turns with a model-written summary and keeps only the last 2 turns verbatim. Upstream default: 28K (28,000 tokens). In effect this is a soft context budget set by the harness, far below the model's own 1M-token limit. It is soft because the check runs after each call, so one large command output can push a single request well past it (we saw up to 185K at a 64K threshold). Right after a compaction the context is back to roughly 10K to 15K.
 - **Passed:** both features' hidden tests pass (in `coop`, after merging the two agents' patches).
@@ -33,5 +33,6 @@ How to read the table:
 | [`coop-...-git-...-3-flash-...-high`](../results/coop-msa_v2-git-gemini-3-flash-flash_10-high/summary.md) | `coop --git` | 3 Flash preview, high | `flash_10` | 100 | 28K | None | Thinking-level effect on the preview model | 4/10 | `$5.98` |
 | [`coop-...-git-...-3-flash-...-low`](../results/coop-msa_v2-git-gemini-3-flash-flash_10-low/summary.md) | `coop --git` | 3 Flash preview, low | `flash_10` | 100 | 28K | None | Model effect at equal thinking (vs. 3.8 Flash, low) | 5/10 | `$3.64` |
 | [`coop-...-git-...-flash_10-stepcounter`](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-stepcounter/summary.md) | `coop --git` | 3.8 Flash, high | `flash_10` | 100 | 28K | Step counter on every turn | Does the countdown also help two agents? | 8/10 | `$12.53` |
+| [`solo-...-core-stepcounter`](../results/solo-msa_v2-gemini-3-8-flash-core-stepcounter/summary.md) | `solo` | 3.8 Flash, high | `core` | 100 | 28K | Step counter on every turn | `solo` reference on pairs where coordination is harder | 5/10 | `$10.23` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
