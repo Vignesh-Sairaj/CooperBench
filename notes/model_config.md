@@ -63,7 +63,20 @@ Use the same provider (`vertex_ai/`, `gemini/`, or `openrouter/`) for every run 
 
 ### Vertex AI (`vertex_ai/`, recommended)
 
-On `VERTEXAI_LOCATION=global`, Vertex AI uses Dynamic Shared Quota rather than a fixed 1M input-TPM ceiling per project: `flash_10` runs at `-c 10` (20 concurrent agents in `coop`) measured over 3M input tokens per minute on a single project with zero `429` retries. Because Dynamic Shared Quota is shared capacity, peak hours can still see occasional `429` bursts, so keep checking retry counts after each run. To scale across multiple projects in parallel, set `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on in `.env` and pass `KEY_SLOT=<n>` ([workflow.md](workflow.md)).
+On `VERTEXAI_LOCATION=global`, Vertex AI uses Dynamic Shared Quota rather than a fixed 1M input-TPM ceiling per project: `flash_10` runs at `-c 10` (20 concurrent agents in `coop`) measured over 3M input tokens per minute on a single project with zero `429` retries. Because Dynamic Shared Quota is shared capacity, peak hours can still see occasional `429` bursts, so keep checking retry counts after each run. To scale across multiple projects in parallel, set `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on in `.env` and pass `KEY_SLOT=<n>` ([workflow.md](workflow.md)). Vertex AI quota is separate from AI Studio quota, so a Vertex run and an AI Studio run on the same GCP project do not compete.
+
+#### Recommended `-c` per Vertex AI project
+
+`-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`). Keep the concurrent agent count equal across compared runs.
+
+| Model, thinking | Compaction | Agents per project | `solo` | `coop`, `coop --git`, `team` | Measured |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| `gemini-3.8-flash`, high (reference) | 28K | 20 | `-c 10` | `-c 10` | `flash_10`, 20 agents: over 3M input tok/min, 0 retries |
+| `gemini-3.8-flash`, any thinking level | 64K | 10 (provisional) | `-c 10` | `-c 5` | Being measured on `flash` (500 steps, `low`); update after the first runs |
+
+At 64K each agent sends about twice the tokens per minute it sends at 28K (see the table below), so the 64K row starts at half the agents. Raise it only if a full run logs few `429` retries.
+
+**Run names do not include the provider.** `vertex_ai/gemini-3.8-flash` and `gemini/gemini-3.8-flash` produce the same run name, and the runner skips every pair that already has a result in that folder. When repeating an AI Studio run on Vertex AI, add a suffix (for example `RUN_SUFFIX=saturation-low-vertex`) so it does not reuse the old folder.
 
 ### AI Studio (`gemini/`)
 
