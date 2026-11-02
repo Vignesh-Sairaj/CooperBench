@@ -1,0 +1,13 @@
+# Variant config: show "Step n of N: k left" on every turn (agent.step_counter, off by default)
+# with low thinking and a $40 per-agent cost cap so cost limits never stop an agent early.
+# Pass via: MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/thinking_low_stepcounter_cap40.yaml RUN_SUFFIX=low-stepcounter tools/run.sh ...
+agent:
+  cost_limit: 40.0
+  step_counter: true
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: low
+      includeThoughts: true

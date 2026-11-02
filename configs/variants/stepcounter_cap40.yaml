@@ -1,0 +1,13 @@
+# Variant config: show "Step n of N: k left" on every turn (agent.step_counter, off by default)
+# with high thinking and a $40 per-agent cost cap so cost limits never stop an agent early.
+# Pass via: AGENT_CONFIG=configs/variants/stepcounter_cap40.yaml RUN_SUFFIX=stepcounter-r2 tools/run.sh ...
+agent:
+  cost_limit: 40.0
+  step_counter: true
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true

@@ -10,10 +10,20 @@
 # Set UV_RUN to change how uv is invoked (default: "uv run --frozen").
 set -euo pipefail
 cd "$(dirname "$0")/.."
+command -v uv >/dev/null 2>&1 || PATH="$HOME/.local/bin:$PATH"
 
 if [[ $# -lt 1 ]]; then
   sed -n '2,10p' "$0"
   exit 1
+fi
+
+if [[ -f .env ]]; then
+  while IFS='=' read -r -d '' _k _v; do
+    if [[ "$_k" =~ ^[A-Za-z_][A-Za-z0-9_]*$ && -z "${!_k+x}" ]]; then
+      export "$_k=$_v"
+    fi
+  done < <(env -i HOME="${HOME:-}" bash -c 'set -a; source .env >/dev/null 2>&1; env -0')
+  unset _k _v
 fi
 
 SUBSET="$1"
