@@ -91,6 +91,7 @@ At 28K this gives 1M / (80K x 1.6) ≈ 8 agents; at 64K it gives 1M / (160K x 1.
 | `gemini-3.8-flash`, high (reference) | 28K | 8 | `-c 8` | `-c 4` | 8 agents: 0 retries; 10 agents: 0 to 64 retries per run |
 | `gemini-3.8-flash`, high | 64K | 4 | `-c 4` | `-c 2` | 4 agents: 1 and 6 retries |
 | `gemini-3.8-flash`, low | 28K | 4 | `-c 4` | `-c 2` | 3 agents: 0 retries; 6 agents: 105 retries |
+| `gemini-3.8-flash`, low | 64K | 2 | `-c 2` | `-c 1` | 3 agents: about 300 retries per 25-pair run (500 steps) |
 | `gemini-3-flash-preview`, minimal or low | 28K | 3 | `-c 3` | `-c 1` | 3 agents: 2 and 26 retries; 6 agents: 69 and 73 retries |
 | `gemini-3-flash-preview`, high | 28K | 5 | `-c 5` | `-c 2` | 3 agents: 0 retries; 6 agents: 61 retries |
 
