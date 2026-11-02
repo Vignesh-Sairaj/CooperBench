@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-8-flash-flash-low-stepcounter",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "vertex_ai/gemini-3.8-flash",
+  "subset": "flash",
+  "concurrency": 10,
+  "key_slot": null,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-8-flash-flash-low-stepcounter -s flash -a mini_swe_agent_v2 -m vertex_ai/gemini-3.8-flash --agent-config configs/variants/thinking_low_stepcounter_cap40.yaml --setting coop -c 10 --backend docker --git",
+  "git_commit": "7bb94c6cc09035e037d70f38b535e08ad41236e9",
+  "git_dirty": true,
+  "agent_config_path": "configs/variants/thinking_low_stepcounter_cap40.yaml",
+  "agent_config": "# Variant config: show \"Step n of N: k left\" on every turn (agent.step_counter, off by default)\n# with low thinking and a $40 per-agent cost cap so cost limits never stop an agent early.\n# Pass via: MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/thinking_low_stepcounter_cap40.yaml RUN_SUFFIX=low-stepcounter tools/run.sh ...\nagent:\n  cost_limit: 40.0\n  step_counter: true\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 100,
+    "compaction_token_trigger": 28000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.103.2"
+  },
+  "started_at": "2026-11-02T12:28:27.909212",
+  "completed_at": "2026-11-02T15:17:22.528524",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-8-flash-flash-low-stepcounter",
+  "headline": {
+    "pairs": 50,
+    "passed": 27,
+    "pass_rate": 0.54,
+    "merge_conflicts": 7,
+    "agents_at_step_limit": 12,
+    "agents_errored": 0,
+    "cost_usd": 33.951,
+    "cost_per_pair_usd": 0.679,
+    "wall_minutes": 168.9
+  },
+  "load": {
+    "peak_input_tokens_per_min": 2503453,
+    "median_input_tokens_per_min": 1043796,
+    "peak_calls_per_min": 156,
+    "total_retries": 27,
+    "rate_limit_retries": 25,
+    "server_busy_retries": 2
+  }
+}
