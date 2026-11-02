@@ -11,6 +11,7 @@ A map of the notes in this folder.
 | [harness_limits.md](harness_limits.md) | How the harness's step limit, compaction, and grading differ from real coding agents, and harness bugs we hit. |
 | [logs_archive.md](logs_archive.md) | Where raw run logs are stored and how to upload or download them. |
 | [results_format.md](results_format.md) | Run naming and the files in `results/<run_name>/`. |
+| [replay_viewer.md](replay_viewer.md) | 3-pane log replay viewer for scrubbing multi-agent trajectories and coordination. |
 | [tasks.md](tasks.md) | Open and finished tasks. |
 
 ## Experiments and Results

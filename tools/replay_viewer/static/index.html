@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CooperBench Studio — Multi-Agent Replay Viewer</title>
+  <style>
+    :root {
+      --bg-base: #0d1117;
+      --bg-panel: #161b22;
+      --bg-surface: #21262d;
+      --bg-hover: #30363d;
+      --border-color: #30363d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --text-heading: #f0f6fc;
+      --accent-blue: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-amber: #d29922;
+      --accent-purple: #bc8cff;
+      --accent-cyan: #39c5cf;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg-base: #f6f8fa;
+      --bg-panel: #ffffff;
+      --bg-surface: #eaeef2;
+      --bg-hover: #d0d7de;
+      --border-color: #d0d7de;
+      --text-main: #24292f;
+      --text-muted: #57609a;
+      --text-heading: #0969da;
+      --accent-blue: #0969da;
+      --accent-green: #1a7f37;
+      --accent-red: #cf222e;
+      --accent-amber: #9a6700;
+      --accent-purple: #8250df;
+      --accent-cyan: #1b7c83;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    /* Top Bar */
+    header.top-bar {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-heading);
+      letter-spacing: -0.2px;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #1f6feb, #8957e5);
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .pair-select-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 520px;
+    }
+    select.select-input {
+      background-color: var(--bg-surface);
+      color: var(--text-heading);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+    }
+    select.select-input:focus { border-color: var(--accent-blue); }
+
+    .pills-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .run-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .run-pill:hover { background-color: var(--bg-hover); }
+    .run-pill.active {
+      background-color: #1f6feb22;
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+    .run-pill .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot.passed { background-color: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+    .status-dot.failed { background-color: var(--accent-red); }
+    .badge-sub { font-size: 10px; opacity: 0.75; }
+
+    .run-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .tag {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+    .tag.highlight { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+    .tag.success { border-color: var(--accent-green); color: var(--accent-green); }
+    .tag.danger { border-color: var(--accent-red); color: var(--accent-red); }
+
+    /* Main 3-Pane Layout */
+    main.panes-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(380px, 1.25fr) minmax(320px, 1fr);
+      gap: 1px;
+      background-color: var(--border-color);
+      overflow: hidden;
+      min-height: 0;
+    }
+    .pane {
+      background-color: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 8px 12px;
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .pane-header-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .agent-title { display: flex; align-items: center; gap: 8px; }
+    .agent-pill {
+      padding: 1px 7px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .agent1-pill { background-color: #1f6feb33; color: var(--accent-blue); border: 1px solid #1f6feb; }
+    .agent2-pill { background-color: #bc8cff33; color: var(--accent-purple); border: 1px solid #bc8cff; }
+
+    .pane-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+    .phase-pill {
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-base);
+    }
+    .phase-read_explore { color: var(--accent-cyan); border-color: var(--accent-cyan); }
+    .phase-file_edit { color: var(--accent-amber); border-color: var(--accent-amber); }
+    .phase-verify_or_git { color: var(--accent-green); border-color: var(--accent-green); }
+    .phase-message { color: var(--accent-purple); border-color: var(--accent-purple); }
+
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-base);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 6px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      outline: none;
+    }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active { color: var(--text-heading); border-bottom-color: var(--accent-blue); font-weight: 600; }
+
+    /* Held Inbox Tray */
+    .held-tray {
+      background-color: #d2992215;
+      border-bottom: 1px solid var(--accent-amber);
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .held-tray.empty { display: none; }
+    .held-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--accent-amber);
+      font-weight: 600;
+    }
+    .held-pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-amber);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(210, 153, 34, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(210, 153, 34, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(210, 153, 34, 0); }
+    }
+    .held-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+    }
+
+    /* Scrollable pane body */
+    .pane-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    /* Center Pane: Coordination & Threads */
+    .threads-sticky {
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .threads-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--text-heading);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .thread-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11px;
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+    .thread-id {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+    .thread-status-badge {
+      font-size: 9.5px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .thread-status-open { background-color: #f8514933; color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .thread-status-resolved { background-color: #3fb95033; color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+    /* Chat Stream in Center */
+    .chat-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bubble-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 88%;
+    }
+    .bubble-wrapper.from-agent1 { align-self: flex-start; }
+    .bubble-wrapper.from-agent2 { align-self: flex-end; }
+    .chat-bubble {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      position: relative;
+    }
+    .bubble-wrapper.from-agent1 .chat-bubble { border-left: 3px solid var(--accent-blue); }
+    .bubble-wrapper.from-agent2 .chat-bubble { border-right: 3px solid var(--accent-purple); }
+
+    .bubble-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .bubble-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-sans);
+    }
+    .bubble-footer {
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px dashed var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 9.5px;
+    }
+    .status-badge.held { background-color: #d2992222; color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+    .status-badge.delivered { background-color: #3fb95022; color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .status-badge.filtered { background-color: #8b949e22; color: var(--text-muted); border: 1px solid var(--border-color); }
+
+    /* Intent badges */
+    .intent-badge {
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      text-transform: uppercase;
+    }
+    .intent-Proposal { background-color: #bc8cff2a; color: var(--accent-purple); border: 1px solid var(--accent-purple); }
+    .intent-Request { background-color: #f851492a; color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .intent-Response { background-color: #58a6ff2a; color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+    .intent-ACK { background-color: #3fb9502a; color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .intent-FYI { background-color: #8b949e2a; color: var(--text-muted); border: 1px solid var(--border-color); }
+
+    /* Inline Event Dividers */
+    .event-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .event-divider::before, .event-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background-color: var(--border-color);
+    }
+    .divider-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 3px 10px;
+    }
+    .divider-content.compaction { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+    .divider-content.nudge { border-color: var(--accent-amber); color: var(--accent-amber); }
+
+    /* Step Card */
+    .step-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+    .step-cmd {
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--accent-blue);
+    }
+    .step-out {
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      max-height: 240px;
+      overflow-y: auto;
+      color: var(--text-muted);
+    }
+    .thought-box {
+      font-style: italic;
+      color: var(--text-muted);
+      border-left: 2px solid var(--border-color);
+      padding-left: 6px;
+      font-size: 11.5px;
+    }
+
+    /* Diff View */
+    .diff-line {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      padding: 1px 4px;
+    }
+    .diff-add { background-color: #3fb95020; color: var(--accent-green); }
+    .diff-del { background-color: #f8514920; color: var(--accent-red); }
+    .diff-hunk { background-color: #58a6ff18; color: var(--accent-cyan); font-weight: 600; }
+
+    /* Bottom Scrubber & Controls */
+    footer.bottom-bar {
+      background-color: var(--bg-panel);
+      border-top: 1px solid var(--border-color);
+      padding: 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .scrubber-track {
+      width: 100%;
+      height: 24px;
+      position: relative;
+      background-color: var(--bg-surface);
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .scrubber-fill {
+      height: 100%;
+      background-color: #1f6feb33;
+      border-radius: 4px 0 0 4px;
+      pointer-events: none;
+    }
+    .scrubber-thumb {
+      position: absolute;
+      top: -2px;
+      bottom: -2px;
+      width: 14px;
+      background-color: var(--accent-blue);
+      border: 2px solid #fff;
+      border-radius: 3px;
+      transform: translateX(-50%);
+      pointer-events: none;
+      box-shadow: 0 0 6px rgba(0,0,0,0.5);
+    }
+    .marker {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      width: 3px;
+      border-radius: 1px;
+      pointer-events: none;
+    }
+    .marker-msg { background-color: var(--accent-purple); }
+    .marker-held { background-color: var(--accent-amber); }
+    .marker-compaction { background-color: var(--accent-cyan); }
+    .marker-nudge { background-color: var(--accent-red); }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .transport-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button.btn {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 5px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    button.btn:hover { background-color: var(--bg-hover); color: var(--text-heading); }
+    button.btn.primary { background-color: #1f6feb; color: #fff; border-color: #1f6feb; }
+    button.btn.primary:hover { background-color: #388bfd; }
+
+    .speed-select {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-size: 11px;
+      outline: none;
+    }
+    .jump-moments {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .jump-pill {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 2px 7px;
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .jump-pill:hover { background-color: var(--bg-hover); color: var(--text-heading); }
+
+    /* Markdown prompt modal/collapsible */
+    .collapsible-spec {
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 6px;
+      font-size: 11px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: var(--font-mono);
+      display: none;
+    }
+    .collapsible-spec.open { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="bar-row">
+      <div class="brand">
+        <span class="brand-badge">CooperBench</span>
+        <span>Replay Studio</span>
+      </div>
+
+      <div class="pair-select-group">
+        <label for="pairSelect" style="color:var(--text-muted); font-size:11px; font-weight:600;">TASK PAIR:</label>
+        <select id="pairSelect" class="select-input">
+          <option value="">Loading benchmark pairs...</option>
+        </select>
+      </div>
+
+      <div class="run-badges" id="runHeadlineBadges">
+        <span class="tag" id="badgeSetting">coop</span>
+        <span class="tag highlight" id="badgeModel">gemini-3-flash</span>
+        <span class="tag" id="badgeDuration">--s</span>
+        <span class="tag" id="badgeCost">$0.00</span>
+      </div>
+
+      <button id="themeToggle" class="btn" title="Toggle theme">🌓</button>
+    </div>
+
+    <!-- Cross-Run Comparison Pills for Selected Pair -->
+    <div class="bar-row" style="margin-top: 2px;">
+      <div style="font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap;">COMPARE RUNS:</div>
+      <div class="pills-group" id="runPillsContainer">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 3-Pane Container -->
+  <main class="panes-container">
+
+    <!-- LEFT PANE: Agent 1 (Feature A) -->
+    <section class="pane" id="paneAgent1">
+      <div class="pane-header">
+        <div class="pane-header-title">
+          <div class="agent-title">
+            <span class="agent-pill agent1-pill">Agent 1</span>
+            <span id="titleFeatureA" style="font-weight:600;">Feature A</span>
+          </div>
+          <button id="btnToggleSpecA" class="btn" style="padding:2px 6px; font-size:10px;">Spec ▾</button>
+        </div>
+        <div class="collapsible-spec" id="specBoxA"></div>
+
+        <div class="pane-metrics">
+          <span>Step <b id="a1StepNum">0</b></span>
+          <span>•</span>
+          <span class="phase-pill phase-none" id="a1PhasePill">Explore</span>
+          <span>•</span>
+          <span id="a1RcBadge" class="tag">rc=0</span>
+          <span>•</span>
+          <span id="a1TokenMeter">0 tok</span>
+          <span>•</span>
+          <span id="a1CompactionBadge" style="display:none;" class="tag highlight">1 Compaction</span>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('agent1', 'live')">Live Steps & Feed</button>
+        <button class="tab-btn" onclick="switchTab('agent1', 'patch')">Final Patch (<span id="a1PatchLines">0</span> lines)</button>
+      </div>
+
+      <!-- Live Held Tray for Agent 1 -->
+      <div class="held-tray empty" id="a1HeldTray">
+        <div class="held-header">
+          <span><span class="held-pulse"></span> BUFFERED INBOX (<span id="a1HeldCount">0</span>)</span>
+          <span id="a1HeldReason" style="font-size:10px; font-weight:normal;">Holding until clean boundary</span>
+        </div>
+        <div id="a1HeldCardsContainer" style="display:flex; flex-direction:column; gap:3px;"></div>
+      </div>
+
+      <div class="pane-body" id="a1BodyLive">
+        <div id="a1StepCard" class="step-card">
+          <div class="step-header">
+            <span>CURRENT STEP ACTION</span>
+            <span id="a1StepTs" style="color:var(--text-muted)">ts=0.0</span>
+          </div>
+          <div id="a1ThoughtBox" class="thought-box" style="display:none;"></div>
+          <div id="a1CmdBox" class="step-cmd">(no command yet)</div>
+          <div id="a1OutBox" class="step-out">(no output yet)</div>
+        </div>
+      </div>
+      <div class="pane-body" id="a1BodyPatch" style="display:none;">
+        <div id="a1PatchContent" class="step-out" style="max-height:100%; height:100%;"></div>
+      </div>
+    </section>
+
+    <!-- CENTER PANE: Coordination, Thread Board & Chat Stream -->
+    <section class="pane" id="paneCenter">
+      <!-- Sticky Active Thread Board -->
+      <div class="threads-sticky">
+        <div class="threads-header">
+          <span>Active Thread Board & Obligations</span>
+          <span id="openThreadsCountBadge" class="tag highlight">0 Open</span>
+        </div>
+        <div id="threadsListContainer" style="display:flex; flex-direction:column; gap:4px;">
+          <div style="color:var(--text-muted); font-size:11px; font-style:italic;">No active conversation threads.</div>
+        </div>
+      </div>
+
+      <!-- Chat Stream -->
+      <div class="chat-stream" id="chatStream">
+        <div style="color:var(--text-muted); text-align:center; padding:20px; font-style:italic;">
+          Scrub the timeline below to watch coordination unfold.
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANE: Agent 2 (Feature B) -->
+    <section class="pane" id="paneAgent2">
+      <div class="pane-header">
+        <div class="pane-header-title">
+          <div class="agent-title">
+            <span class="agent-pill agent2-pill">Agent 2</span>
+            <span id="titleFeatureB" style="font-weight:600;">Feature B</span>
+          </div>
+          <button id="btnToggleSpecB" class="btn" style="padding:2px 6px; font-size:10px;">Spec ▾</button>
+        </div>
+        <div class="collapsible-spec" id="specBoxB"></div>
+
+        <div class="pane-metrics">
+          <span>Step <b id="a2StepNum">0</b></span>
+          <span>•</span>
+          <span class="phase-pill phase-none" id="a2PhasePill">Explore</span>
+          <span>•</span>
+          <span id="a2RcBadge" class="tag">rc=0</span>
+          <span>•</span>
+          <span id="a2TokenMeter">0 tok</span>
+          <span>•</span>
+          <span id="a2CompactionBadge" style="display:none;" class="tag highlight">1 Compaction</span>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('agent2', 'live')">Live Steps & Feed</button>
+        <button class="tab-btn" onclick="switchTab('agent2', 'patch')">Final Patch (<span id="a2PatchLines">0</span> lines)</button>
+      </div>
+
+      <!-- Live Held Tray for Agent 2 -->
+      <div class="held-tray empty" id="a2HeldTray">
+        <div class="held-header">
+          <span><span class="held-pulse"></span> BUFFERED INBOX (<span id="a2HeldCount">0</span>)</span>
+          <span id="a2HeldReason" style="font-size:10px; font-weight:normal;">Holding until clean boundary</span>
+        </div>
+        <div id="a2HeldCardsContainer" style="display:flex; flex-direction:column; gap:3px;"></div>
+      </div>
+
+      <div class="pane-body" id="a2BodyLive">
+        <div id="a2StepCard" class="step-card">
+          <div class="step-header">
+            <span>CURRENT STEP ACTION</span>
+            <span id="a2StepTs" style="color:var(--text-muted)">ts=0.0</span>
+          </div>
+          <div id="a2ThoughtBox" class="thought-box" style="display:none;"></div>
+          <div id="a2CmdBox" class="step-cmd">(no command yet)</div>
+          <div id="a2OutBox" class="step-out">(no output yet)</div>
+        </div>
+      </div>
+      <div class="pane-body" id="a2BodyPatch" style="display:none;">
+        <div id="a2PatchContent" class="step-out" style="max-height:100%; height:100%;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Timeline Scrubber & Transport Bar -->
+  <footer class="bottom-bar">
+    <div class="scrubber-track" id="scrubberTrack">
+      <div class="scrubber-fill" id="scrubberFill"></div>
+      <div class="scrubber-thumb" id="scrubberThumb" style="left: 0%;"></div>
+      <!-- Markers rendered dynamically -->
+    </div>
+
+    <div class="controls-row">
+      <div class="transport-btns">
+        <button id="btnPrev" class="btn" title="Previous Frame (←)">◀ Prev</button>
+        <button id="btnPlayPause" class="btn primary" title="Play / Pause (Space)">▶ Play</button>
+        <button id="btnNext" class="btn" title="Next Frame (→)">Next ▶</button>
+        <span style="font-family:var(--font-mono); font-size:11px; margin-left:6px;" id="frameCounter">Frame 0 / 0</span>
+      </div>
+
+      <div class="jump-moments">
+        <span>Jump to:</span>
+        <span class="jump-pill" onclick="jumpTo('first_msg')">💬 First Message</span>
+        <span class="jump-pill" onclick="jumpTo('held')">⏸ Held Buffer</span>
+        <span class="jump-pill" onclick="jumpTo('flush')">⚡ Flush Boundary</span>
+        <span class="jump-pill" onclick="jumpTo('compaction')">📑 Compaction</span>
+        <span class="jump-pill" onclick="jumpTo('submit')">🏁 Submission</span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+        <label for="speedSelect" style="color:var(--text-muted); font-size:11px;">Speed:</label>
+        <select id="speedSelect" class="speed-select">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1.0x</option>
+          <option value="2">2.0x</option>
+          <option value="5">5.0x</option>
+          <option value="10">10.0x</option>
+        </select>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // State Store
+    let allPairs = [];
+    let selectedPair = null;
+    let selectedRunName = null;
+    let replayData = null;
+    let currentFrameIndex = 0;
+    let isPlaying = false;
+    let playInterval = null;
+    let playSpeed = 1.0;
+
+    // DOM Elements
+    const pairSelect = document.getElementById("pairSelect");
+    const runPillsContainer = document.getElementById("runPillsContainer");
+    const scrubberTrack = document.getElementById("scrubberTrack");
+    const scrubberFill = document.getElementById("scrubberFill");
+    const scrubberThumb = document.getElementById("scrubberThumb");
+    const frameCounter = document.getElementById("frameCounter");
+    const btnPlayPause = document.getElementById("btnPlayPause");
+    const btnPrev = document.getElementById("btnPrev");
+    const btnNext = document.getElementById("btnNext");
+    const speedSelect = document.getElementById("speedSelect");
+
+    // Init App
+    async function init() {
+      setupThemeToggle();
+      setupKeyboardControls();
+      setupScrubberEvents();
+      await fetchPairsIndex();
+    }
+
+    async function fetchPairsIndex() {
+      if (window.__PRELOADED_REPLAY_BUNDLE__ && window.__PRELOADED_REPLAY_BUNDLE__.pairs) {
+        allPairs = window.__PRELOADED_REPLAY_BUNDLE__.pairs;
+        renderPairOptions();
+        return;
+      }
+      try {
+        const resp = await fetch("/api/index");
+        allPairs = await resp.json();
+        renderPairOptions();
+      } catch (err) {
+        console.error("Failed to load pairs index:", err);
+        pairSelect.innerHTML = `<option>Error loading index: ${err.message}</option>`;
+      }
+    }
+
+    function renderPairOptions() {
+      pairSelect.innerHTML = "";
+      allPairs.forEach((pair, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        const runsCount = Object.keys(pair.runs || {}).length;
+        opt.textContent = `${pair.repo} (#${pair.task_id} f${pair.feature_a}_f${pair.feature_b}) — ${runsCount} run(s)`;
+        pairSelect.appendChild(opt);
+      });
+
+      if (allPairs.length > 0) {
+        // Prefer a showcase pair by default if present (e.g. go_chi 26 or dottxt 1655)
+        const showcaseIdx = allPairs.findIndex(p => (p.repo.includes("outlines") && p.task_id === 1655) || (p.repo.includes("chi") && p.task_id === 26));
+        const defaultIdx = showcaseIdx !== -1 ? showcaseIdx : 0;
+        pairSelect.selectedIndex = defaultIdx;
+        selectPair(defaultIdx);
+      }
+    }
+
+    pairSelect.addEventListener("change", (e) => {
+      selectPair(parseInt(e.target.value, 10));
+    });
+
+    function selectPair(idx) {
+      selectedPair = allPairs[idx];
+      renderRunPills();
+    }
+
+    function renderRunPills() {
+      runPillsContainer.innerHTML = "";
+      if (!selectedPair || !selectedPair.runs) return;
+
+      const runKeys = Object.keys(selectedPair.runs);
+      // Sort so baseline comes first, then delivery, threading, intents, combined
+      runKeys.sort((a, b) => {
+        const order = (name) => {
+          if (name.includes("stepcounter") && !name.includes("delivery") && !name.includes("thread") && !name.includes("intent")) return 1;
+          if (name.includes("delivery-timing")) return 2;
+          if (name.includes("threading")) return 3;
+          if (name.includes("intents")) return 4;
+          if (name.includes("comm-combined")) return 5;
+          return 10;
+        };
+        return order(a) - order(b);
+      });
+
+      runKeys.forEach((rName, idx) => {
+        const rData = selectedPair.runs[rName];
+        const pill = document.createElement("div");
+        pill.className = "run-pill";
+        if (idx === 0) pill.classList.add("active");
+
+        const isPassed = rData.both_passed;
+        const mergeStatus = rData.merge_status || "unknown";
+
+        let label = rName;
+        if (rName.includes("delivery-timing")) label = "Delivery Timing";
+        else if (rName.includes("threading")) label = "Threading";
+        else if (rName.includes("intents")) label = "Intents";
+        else if (rName.includes("comm-combined")) label = "Combined Arms";
+        else if (rName.includes("stepcounter")) label = "Baseline";
+
+        pill.innerHTML = `
+          <span class="status-dot ${isPassed ? 'passed' : 'failed'}"></span>
+          <span>${label}</span>
+          <span class="badge-sub">(${mergeStatus}, ${rData.messages_sent} msgs)</span>
+        `;
+
+        pill.addEventListener("click", () => {
+          document.querySelectorAll(".run-pill").forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+          loadReplay(rName);
+        });
+
+        runPillsContainer.appendChild(pill);
+      });
+
+      if (runKeys.length > 0) {
+        // Auto-select delivery-timing or first pill
+        const bestRun = runKeys.find(r => r.includes("delivery-timing")) || runKeys[0];
+        document.querySelectorAll(".run-pill").forEach(p => {
+          if (p.textContent.includes("Delivery Timing") || p.textContent.includes(bestRun)) {
+            p.classList.add("active");
+          } else {
+            p.classList.remove("active");
+          }
+        });
+        loadReplay(bestRun);
+      }
+    }
+
+    async function loadReplay(runName) {
+      if (!selectedPair) return;
+      selectedRunName = runName;
+      pause();
+
+      const pairKey = `${runName}:${selectedPair.repo}:${selectedPair.task_id}:f${selectedPair.feature_a}_f${selectedPair.feature_b}`;
+      if (window.__PRELOADED_REPLAY_BUNDLE__ && window.__PRELOADED_REPLAY_BUNDLE__.replays && window.__PRELOADED_REPLAY_BUNDLE__.replays[pairKey]) {
+        replayData = window.__PRELOADED_REPLAY_BUNDLE__.replays[pairKey];
+        currentFrameIndex = 0;
+        renderReplayMeta();
+        renderMarkers();
+        renderFrame(0);
+        return;
+      }
+
+      const url = `/api/replay?run=${encodeURIComponent(runName)}&repo=${encodeURIComponent(selectedPair.repo)}&task=${selectedPair.task_id}&f1=${selectedPair.feature_a}&f2=${selectedPair.feature_b}`;
+      try {
+        const resp = await fetch(url);
+        replayData = await resp.json();
+        currentFrameIndex = 0;
+        renderReplayMeta();
+        renderMarkers();
+        renderFrame(0);
+      } catch (err) {
+        console.error("Failed to load replay:", err);
+      }
+    }
+
+    function renderReplayMeta() {
+      if (!replayData) return;
+      document.getElementById("titleFeatureA").textContent = `Feature ${replayData.features[0]}`;
+      document.getElementById("titleFeatureB").textContent = `Feature ${replayData.features[1]}`;
+      document.getElementById("specBoxA").textContent = replayData.specs.feature_a;
+      document.getElementById("specBoxB").textContent = replayData.specs.feature_b;
+
+      // Badges
+      const dur = (replayData.result.duration_seconds || 0).toFixed(1);
+      const cost = (replayData.result.total_cost || 0).toFixed(3);
+      document.getElementById("badgeDuration").textContent = `${dur}s`;
+      document.getElementById("badgeCost").textContent = `$${cost}`;
+      document.getElementById("badgeSetting").textContent = replayData.result.setting || "coop";
+
+      // Render Patches in patch tabs
+      renderDiff(document.getElementById("a1PatchContent"), replayData.patches.agent1);
+      renderDiff(document.getElementById("a2PatchContent"), replayData.patches.agent2);
+      document.getElementById("a1PatchLines").textContent = replayData.patches.agent1.split("\n").length;
+      document.getElementById("a2PatchLines").textContent = replayData.patches.agent2.split("\n").length;
+    }
+
+    function renderDiff(container, patchText) {
+      container.innerHTML = "";
+      if (!patchText || !patchText.trim()) {
+        container.innerHTML = `<div style="color:var(--text-muted); font-style:italic;">No patch generated (empty diff).</div>`;
+        return;
+      }
+      const lines = patchText.split("\n");
+      lines.forEach(line => {
+        const div = document.createElement("div");
+        div.className = "diff-line";
+        if (line.startsWith("+") && !line.startsWith("+++")) div.classList.add("diff-add");
+        else if (line.startsWith("-") && !line.startsWith("---")) div.classList.add("diff-del");
+        else if (line.startsWith("@@")) div.classList.add("diff-hunk");
+        div.textContent = line;
+        container.appendChild(div);
+      });
+    }
+
+    function renderMarkers() {
+      // Clear previous markers
+      document.querySelectorAll(".marker").forEach(m => m.remove());
+      if (!replayData || !replayData.timeline) return;
+
+      const totalFrames = replayData.timeline.length;
+      if (totalFrames <= 1) return;
+
+      replayData.timeline.forEach((frame, idx) => {
+        const pct = (idx / (totalFrames - 1)) * 100;
+        let markerClass = null;
+        if (frame.kind === "msg_sent") markerClass = "marker-msg";
+        else if (frame.kind === "msg_delivered" && frame.delivery_status === "held") markerClass = "marker-held";
+        else if (frame.kind === "compaction") markerClass = "marker-compaction";
+        else if (frame.kind === "nudge") markerClass = "marker-nudge";
+
+        if (markerClass) {
+          const m = document.createElement("div");
+          m.className = `marker ${markerClass}`;
+          m.style.left = `${pct}%`;
+          m.title = `${frame.description} (Frame ${idx})`;
+          scrubberTrack.appendChild(m);
+        }
+      });
+    }
+
+    function renderFrame(index) {
+      if (!replayData || !replayData.timeline || replayData.timeline.length === 0) return;
+      currentFrameIndex = Math.max(0, Math.min(index, replayData.timeline.length - 1));
+      const frame = replayData.timeline[currentFrameIndex];
+      const total = replayData.timeline.length;
+
+      // Update Scrubber
+      const pct = total > 1 ? (currentFrameIndex / (total - 1)) * 100 : 0;
+      scrubberFill.style.width = `${pct}%`;
+      scrubberThumb.style.left = `${pct}%`;
+      frameCounter.textContent = `Frame ${currentFrameIndex + 1} / ${total}`;
+
+      // Update Agent 1 State
+      const a1 = frame.agent1;
+      document.getElementById("a1StepNum").textContent = a1.step;
+      const a1Phase = document.getElementById("a1PhasePill");
+      a1Phase.textContent = a1.action_phase.replace("_", " ");
+      a1Phase.className = `phase-pill phase-${a1.action_phase}`;
+
+      const a1Rc = document.getElementById("a1RcBadge");
+      a1Rc.textContent = a1.returncode !== null ? `rc=${a1.returncode}` : "rc=0";
+      a1Rc.className = `tag ${a1.returncode !== null && a1.returncode !== 0 ? 'danger' : 'success'}`;
+      document.getElementById("a1TokenMeter").textContent = `${a1.tokens} tok`;
+
+      const a1CompBadge = document.getElementById("a1CompactionBadge");
+      if (a1.compactions > 0) {
+        a1CompBadge.style.display = "inline-block";
+        a1CompBadge.textContent = `${a1.compactions} Compaction${a1.compactions > 1 ? 's' : ''}`;
+      } else {
+        a1CompBadge.style.display = "none";
+      }
+
+      document.getElementById("a1CmdBox").textContent = a1.command || "(no command executed)";
+      document.getElementById("a1OutBox").textContent = a1.output || "(no output)";
+      const a1Thought = document.getElementById("a1ThoughtBox");
+      if (a1.thought) {
+        a1Thought.style.display = "block";
+        a1Thought.textContent = `💭 ${a1.thought}`;
+      } else {
+        a1Thought.style.display = "none";
+      }
+
+      // Update Agent 1 Held Tray
+      renderHeldTray("agent1", a1.held_inbox);
+
+      // Update Agent 2 State
+      const a2 = frame.agent2;
+      document.getElementById("a2StepNum").textContent = a2.step;
+      const a2Phase = document.getElementById("a2PhasePill");
+      a2Phase.textContent = a2.action_phase.replace("_", " ");
+      a2Phase.className = `phase-pill phase-${a2.action_phase}`;
+
+      const a2Rc = document.getElementById("a2RcBadge");
+      a2Rc.textContent = a2.returncode !== null ? `rc=${a2.returncode}` : "rc=0";
+      a2Rc.className = `tag ${a2.returncode !== null && a2.returncode !== 0 ? 'danger' : 'success'}`;
+      document.getElementById("a2TokenMeter").textContent = `${a2.tokens} tok`;
+
+      const a2CompBadge = document.getElementById("a2CompactionBadge");
+      if (a2.compactions > 0) {
+        a2CompBadge.style.display = "inline-block";
+        a2CompBadge.textContent = `${a2.compactions} Compaction${a2.compactions > 1 ? 's' : ''}`;
+      } else {
+        a2CompBadge.style.display = "none";
+      }
+
+      document.getElementById("a2CmdBox").textContent = a2.command || "(no command executed)";
+      document.getElementById("a2OutBox").textContent = a2.output || "(no output)";
+      const a2Thought = document.getElementById("a2ThoughtBox");
+      if (a2.thought) {
+        a2Thought.style.display = "block";
+        a2Thought.textContent = `💭 ${a2.thought}`;
+      } else {
+        a2Thought.style.display = "none";
+      }
+
+      // Update Agent 2 Held Tray
+      renderHeldTray("agent2", a2.held_inbox);
+
+      // Update Center Pane
+      renderCenterPane(frame.center, frame);
+    }
+
+    function renderHeldTray(agentId, heldMessages) {
+      const isA1 = agentId === "agent1";
+      const tray = document.getElementById(isA1 ? "a1HeldTray" : "a2HeldTray");
+      const countEl = document.getElementById(isA1 ? "a1HeldCount" : "a2HeldCount");
+      const reasonEl = document.getElementById(isA1 ? "a1HeldReason" : "a2HeldReason");
+      const container = document.getElementById(isA1 ? "a1HeldCardsContainer" : "a2HeldCardsContainer");
+
+      if (!heldMessages || heldMessages.length === 0) {
+        tray.classList.add("empty");
+        return;
+      }
+
+      tray.classList.remove("empty");
+      countEl.textContent = heldMessages.length;
+      const first = heldMessages[0];
+      reasonEl.textContent = first.hold_reason || "Buffering non-urgent message";
+
+      container.innerHTML = "";
+      heldMessages.forEach(m => {
+        const card = document.createElement("div");
+        card.className = "held-card";
+        const snip = m.content.substring(0, 75).replace(/\n/g, " ");
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; color:var(--accent-amber);">
+            <b>${m.id} from ${m.sender}</b>
+            <span>${m.intent ? `[${m.intent}]` : ''} • Held ${m.held_steps || 1} step(s)</span>
+          </div>
+          <div style="color:var(--text-main); margin-top:2px;">"${snip}..."</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderCenterPane(center, frame) {
+      // Active Threads
+      const threadsContainer = document.getElementById("threadsListContainer");
+      const openBadge = document.getElementById("openThreadsCountBadge");
+      const threads = center.threads || [];
+      const openThreads = threads.filter(t => t.status === "open");
+
+      openBadge.textContent = `${openThreads.length} Open`;
+      openBadge.className = `tag ${openThreads.length > 0 ? 'highlight' : 'success'}`;
+
+      if (threads.length === 0) {
+        threadsContainer.innerHTML = `<div style="color:var(--text-muted); font-size:11px; font-style:italic;">No active conversation threads.</div>`;
+      } else {
+        threadsContainer.innerHTML = "";
+        threads.forEach(t => {
+          const row = document.createElement("div");
+          row.className = "thread-row";
+          row.innerHTML = `
+            <span class="thread-id">${t.thread_id}</span>
+            <span class="thread-status-badge thread-status-${t.status}">${t.status}</span>
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              <b>${t.last_sender}:</b> "${t.last_summary}"
+            </span>
+          `;
+          threadsContainer.appendChild(row);
+        });
+      }
+
+      // Chat Stream
+      const chatStream = document.getElementById("chatStream");
+      chatStream.innerHTML = "";
+
+      const msgs = center.messages || [];
+      if (msgs.length === 0) {
+        chatStream.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:20px; font-style:italic;">No messages sent yet at this point in the timeline.</div>`;
+      } else {
+        msgs.forEach(m => {
+          const wrapper = document.createElement("div");
+          wrapper.className = `bubble-wrapper from-${m.sender}`;
+
+          const intentClass = m.intent ? `intent-${m.intent}` : '';
+          const intentTag = m.intent ? `<span class="intent-badge ${intentClass}">${m.intent}</span>` : '';
+          const replyTag = m.reply_to ? `<span class="tag" style="font-size:9.5px;">↩ ${m.reply_to}</span>` : '';
+          const waitTag = m.wait ? `<span class="tag danger" style="font-size:9.5px;">⏳ --wait</span>` : '';
+
+          let statusClass = "delivered";
+          if (m.live_status === "held") statusClass = "held";
+          else if (m.live_status === "filtered_fyi") statusClass = "filtered";
+
+          wrapper.innerHTML = `
+            <div class="bubble-meta">
+              <b>${m.sender}</b>
+              <span style="font-family:var(--font-mono);">${m.id}</span>
+              ${intentTag}
+              ${replyTag}
+              ${waitTag}
+            </div>
+            <div class="chat-bubble">
+              <div class="bubble-body">${escapeHtml(m.content)}</div>
+              <div class="bubble-footer">
+                <span style="color:var(--text-muted);">Sent @ Step ${m.sent_step}</span>
+                <span class="status-badge ${statusClass}">${m.live_badge}</span>
+              </div>
+            </div>
+          `;
+          chatStream.appendChild(wrapper);
+        });
+      }
+
+      // Compaction / Nudge inline dividers
+      if (center.active_compaction) {
+        const c = center.active_compaction;
+        const div = document.createElement("div");
+        div.className = "event-divider";
+        div.innerHTML = `
+          <div class="divider-content compaction">
+            <span>📑</span>
+            <b>${c.agent_id} COMPACTED CONTEXT:</b>
+            <span>${escapeHtml(c.summary.substring(0, 80))}...</span>
+          </div>
+        `;
+        chatStream.appendChild(div);
+      }
+
+      if (center.active_nudge) {
+        const n = center.active_nudge;
+        const div = document.createElement("div");
+        div.className = "event-divider";
+        div.innerHTML = `
+          <div class="divider-content nudge">
+            <span>⚠️</span>
+            <b>HARNESS NUDGE (${n.kind}):</b>
+            <span>${escapeHtml(n.message.substring(0, 80))}...</span>
+          </div>
+        `;
+        chatStream.appendChild(div);
+      }
+
+      // Scroll to bottom of chat
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Playback Controls
+    function play() {
+      if (!replayData || !replayData.timeline) return;
+      isPlaying = true;
+      btnPlayPause.textContent = "⏸ Pause";
+      const intervalMs = Math.max(100, Math.floor(600 / playSpeed));
+      playInterval = setInterval(() => {
+        if (currentFrameIndex >= replayData.timeline.length - 1) {
+          pause();
+          return;
+        }
+        renderFrame(currentFrameIndex + 1);
+      }, intervalMs);
+    }
+
+    function pause() {
+      isPlaying = false;
+      btnPlayPause.textContent = "▶ Play";
+      if (playInterval) {
+        clearInterval(playInterval);
+        playInterval = null;
+      }
+    }
+
+    btnPlayPause.addEventListener("click", () => {
+      if (isPlaying) pause();
+      else play();
+    });
+
+    btnPrev.addEventListener("click", () => {
+      pause();
+      renderFrame(currentFrameIndex - 1);
+    });
+
+    btnNext.addEventListener("click", () => {
+      pause();
+      renderFrame(currentFrameIndex + 1);
+    });
+
+    speedSelect.addEventListener("change", (e) => {
+      playSpeed = parseFloat(e.target.value);
+      if (isPlaying) {
+        pause();
+        play();
+      }
+    });
+
+    function setupScrubberEvents() {
+      let isDragging = false;
+      function seek(e) {
+        if (!replayData || !replayData.timeline) return;
+        const rect = scrubberTrack.getBoundingClientRect();
+        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const frameIdx = Math.round(pos * (replayData.timeline.length - 1));
+        pause();
+        renderFrame(frameIdx);
+      }
+
+      scrubberTrack.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        seek(e);
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (isDragging) seek(e);
+      });
+      window.addEventListener("mouseup", () => {
+        isDragging = false;
+      });
+    }
+
+    function setupKeyboardControls() {
+      window.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (isPlaying) pause();
+          else play();
+        } else if (e.code === "ArrowLeft") {
+          e.preventDefault();
+          pause();
+          renderFrame(currentFrameIndex - 1);
+        } else if (e.code === "ArrowRight") {
+          e.preventDefault();
+          pause();
+          renderFrame(currentFrameIndex + 1);
+        } else if (e.code === "Home") {
+          e.preventDefault();
+          pause();
+          renderFrame(0);
+        } else if (e.code === "End") {
+          e.preventDefault();
+          pause();
+          renderFrame(replayData.timeline.length - 1);
+        }
+      });
+    }
+
+    function jumpTo(momentType) {
+      if (!replayData || !replayData.timeline) return;
+      pause();
+      let targetIdx = -1;
+
+      if (momentType === "first_msg") {
+        targetIdx = replayData.timeline.findIndex(f => f.kind === "msg_sent");
+      } else if (momentType === "held") {
+        targetIdx = replayData.timeline.findIndex(f => (f.agent1.held_inbox && f.agent1.held_inbox.length > 0) || (f.agent2.held_inbox && f.agent2.held_inbox.length > 0));
+      } else if (momentType === "flush") {
+        targetIdx = replayData.timeline.findIndex(f => f.kind === "msg_delivered" && f.delivery_status === "held");
+      } else if (momentType === "compaction") {
+        targetIdx = replayData.timeline.findIndex(f => f.kind === "compaction");
+      } else if (momentType === "submit") {
+        targetIdx = replayData.timeline.findIndex(f => {
+          if (f.kind !== "step") return false;
+          const cmd = (f.agent === "agent1" ? f.agent1.command : f.agent2.command) || "";
+          return cmd.includes("COMPLETE_TASK_AND_SUBMIT");
+        });
+      }
+
+      if (targetIdx !== -1) {
+        renderFrame(targetIdx);
+      }
+    }
+
+    function switchTab(agent, tab) {
+      const isA1 = agent === "agent1";
+      const liveBody = document.getElementById(isA1 ? "a1BodyLive" : "a2BodyLive");
+      const patchBody = document.getElementById(isA1 ? "a1BodyPatch" : "a2BodyPatch");
+      const tabBtns = document.querySelectorAll(`#paneAgent${isA1 ? '1' : '2'} .tab-btn`);
+
+      if (tab === "live") {
+        liveBody.style.display = "flex";
+        patchBody.style.display = "none";
+        tabBtns[0].classList.add("active");
+        tabBtns[1].classList.remove("active");
+      } else {
+        liveBody.style.display = "none";
+        patchBody.style.display = "flex";
+        tabBtns[0].classList.remove("active");
+        tabBtns[1].classList.add("active");
+      }
+    }
+
+    document.getElementById("btnToggleSpecA").addEventListener("click", () => {
+      document.getElementById("specBoxA").classList.toggle("open");
+    });
+    document.getElementById("btnToggleSpecB").addEventListener("click", () => {
+      document.getElementById("specBoxB").classList.toggle("open");
+    });
+
+    function setupThemeToggle() {
+      const toggle = document.getElementById("themeToggle");
+      toggle.addEventListener("click", () => {
+        const curr = document.documentElement.getAttribute("data-theme") || "dark";
+        const next = curr === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
