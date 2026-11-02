@@ -26,7 +26,7 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | `coop --git` | `tools/run.sh coop flash_10 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
 | `team` | `tools/run.sh team flash_10 4` | `team-msa_v2-gemini-3-8-flash-flash_10` |
 
-**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. We have proposed 250 steps and 64K compaction for every setting ([baseline_ablation_flash10.md](baseline_ablation_flash10.md)); until the team agrees, runs with those budgets use `AGENT_CONFIG=configs/variants/steps250_compact64k.yaml`. If adopted, it goes into the reference agent config and every baseline is rerun.
+**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. The per-turn step counter fixes most of that at the same cost ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)), and we have proposed making it standard. The thinking level and budget will be chosen from the 500-step `solo` saturation runs. Whatever the team adopts goes into the reference agent config, and every baseline is rerun.
 
 ## Settings and Reasons
 

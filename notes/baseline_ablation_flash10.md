@@ -71,6 +71,9 @@ The CooperBench paper reports `solo` well ahead of `coop`. Our numbers should no
 
 ## Next
 
+Follow-up results (model and thinking level, the step counter, and `team`) are in [model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md).
+
+
 - `team` with 250 steps, to complete the four settings.
 - `solo` with the current step number shown on every turn, to test whether a visible countdown makes agents submit in time.
 - Repeat runs, or the 50-pair `flash` subset, before drawing conclusions about `solo` vs. `coop`.

@@ -19,6 +19,7 @@ A map of the notes in this folder.
 | :--- | :--- |
 | [runs.md](runs.md) | Every benchmark run: settings, the question it answers, result, and a link to its summary. |
 | [baseline_ablation_flash10.md](baseline_ablation_flash10.md) | Step limit and compaction experiments on `flash_10`: why we ran them and what we concluded. |
+| [model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md) | Two Gemini models at different thinking levels, the per-turn step counter, and the `team` baseline on `flash_10`. |
 
 ## Coordination Interventions
 
