@@ -13,7 +13,7 @@ All our runs, baselines and intervention arms alike, use this setup. It is the u
 | Model and provider | `-m gemini/gemini-3.8-flash` (AI Studio key in `GEMINI_API_KEY`) |
 | Agent config | `--agent-config configs/gemini_3_8_flash_high.yaml` |
 | Step limit and compaction | Upstream defaults: 100 steps, compaction at 28K tokens |
-| Concurrency | About 8 agents per key at 28K: `-c 8` for `solo`, `-c 4` for `coop` and `team` |
+| Concurrency | About 8 agents per key at 28K: `-c 8` for `solo`, `-c 4` for `coop` and `team` (other models and thinking levels: see [Concurrency](#recommended--c-per-api-key)) |
 | Run name | Leave out `-n`; intervention arms add a suffix (see [results_format.md](results_format.md)) |
 | Subsets | `flash_10` for the baseline screen, `flash` for intervention arms |
 

@@ -42,7 +42,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    tools/pull_images.sh flash_10
    ```
 
-2. **Run** with the [reference setup](model_config.md#reference-setup). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model, agent config, and backend, and names the run. Run 8 pairs at once for `solo` and 4 for `coop` and `team` (about 8 agents either way):
+2. **Run** with the [reference setup](model_config.md#reference-setup). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model, agent config, and backend, and names the run. With the reference setup, run 8 pairs at once for `solo` and 4 for `coop` and `team` (about 8 agents either way). Low thinking levels, other models, and larger compaction need fewer; see the table in [model_config.md](model_config.md#recommended--c-per-api-key):
 
    ```bash
    tools/run.sh solo flash_10 8               # solo-msa_v2-gemini-3-8-flash-flash_10
