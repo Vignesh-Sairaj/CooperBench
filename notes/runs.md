@@ -35,5 +35,6 @@ How to read the table:
 | [`coop-...-git-...-flash_10-stepcounter`](../results/coop-msa_v2-git-gemini-3-8-flash-flash_10-stepcounter/summary.md) | `coop --git` | 3.8 Flash, high | `flash_10` | 100 | 28K | Step counter on every turn | Does the countdown also help two agents? | 8/10 | `$12.53` |
 | [`solo-...-core-stepcounter`](../results/solo-msa_v2-gemini-3-8-flash-core-stepcounter/summary.md) | `solo` | 3.8 Flash, high | `core` | 100 | 28K | Step counter on every turn | `solo` reference on pairs where coordination is harder | 5/10 | `$10.23` |
 | [`coop-...-git-...-core-stepcounter`](../results/coop-msa_v2-git-gemini-3-8-flash-core-stepcounter/summary.md) | `coop --git` | 3.8 Flash, high | `core` | 100 | 28K | Step counter on every turn | Coordination failures on harder pairs (vs. `solo` 5/10) | 4/10 | `$13.16` |
+| [`solo-...-flash_10-steps250-compact64k-stepcounter`](../results/solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k-stepcounter/summary.md) | `solo` | 3.8 Flash, high | `flash_10` | 250 | 64K | Step counter on every turn | Does the counter help at a larger budget? | 9/10 | `$17.05` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).

@@ -1,0 +1,46 @@
+{
+  "run_name": "solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k-stepcounter",
+  "setting": "solo",
+  "git_enabled": false,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3.8-flash",
+  "subset": "flash_10",
+  "concurrency": 4,
+  "key_slot": 4,
+  "command": "cooperbench run -n solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k-stepcounter -s flash_10 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/steps250_compact64k_stepcounter.yaml --setting solo -c 4 --backend docker",
+  "git_commit": "a33aa2abc6767f10ca819c7f5941f22c7b80766b",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/steps250_compact64k_stepcounter.yaml",
+  "agent_config": "# Variant config: 250 steps, compaction at 64K tokens, and \"Step n of N: k left\" on every turn.\n# Pass via: AGENT_CONFIG=configs/variants/steps250_compact64k_stepcounter.yaml RUN_SUFFIX=steps250-compact64k-stepcounter tools/run.sh solo ...\nagent:\n  cost_limit: 10.0\n  step_limit: 250\n  compaction_token_trigger: 64000\n  step_counter: true\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 250,
+    "compaction_token_trigger": 64000,
+    "thinking_level": "high"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-01T14:54:48.129358",
+  "completed_at": "2026-11-01T17:09:31.853289",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/solo-msa_v2-gemini-3-8-flash-flash_10-steps250-compact64k-stepcounter",
+  "headline": {
+    "pairs": 10,
+    "passed": 9,
+    "pass_rate": 0.9,
+    "merge_conflicts": 0,
+    "agents_at_step_limit": 0,
+    "agents_errored": 0,
+    "cost_usd": 17.0453,
+    "cost_per_pair_usd": 1.7045,
+    "wall_minutes": 134.7
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1232911,
+    "median_input_tokens_per_min": 538558,
+    "peak_calls_per_min": 35,
+    "total_retries": 24,
+    "rate_limit_retries": 22,
+    "server_busy_retries": 2
+  }
+}
