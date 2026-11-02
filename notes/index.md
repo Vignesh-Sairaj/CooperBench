@@ -24,4 +24,7 @@ A map of the notes in this folder.
 
 ## Coordination Interventions
 
-*(Add notes here as we design and implement the shared hook layer, structured messaging, partner-diff sync / shared blackboard, pre-submit commitment verifier, and hierarchical team evaluation.)*
+| Note | What it covers |
+| :--- | :--- |
+| [communication_interventions.md](communication_interventions.md) | Opt-in message delivery timing, thread tracking across compactions, and speech-act intent tags: design, lineage, flags, and variant configs. |
+| [communication_ablations.md](communication_ablations.md) | Communication ablation and 50-pair `flash` results across `gemini-3-flash-preview` and `gemini-3.8-flash`: what helped each model and why. |

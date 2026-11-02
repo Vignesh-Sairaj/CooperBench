@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-flash-core-low-delivery-timing",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "vertex_ai/gemini-3-flash-preview",
+  "subset": "core",
+  "concurrency": 10,
+  "key_slot": null,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-flash-core-low-delivery-timing -s core -a mini_swe_agent_v2 -m vertex_ai/gemini-3-flash-preview --agent-config configs/variants/delivery_timing_low.yaml --setting coop -c 10 --backend docker --git",
+  "git_commit": "7bb94c6cc09035e037d70f38b535e08ad41236e9",
+  "git_dirty": true,
+  "agent_config_path": "configs/variants/delivery_timing_low.yaml",
+  "agent_config": "# Variant config: Message Delivery Timing (low thinking, gemini-3-flash-preview).\n# Holds non-blocking incoming messages until natural workflow boundaries (clean test/git/PR\n# commands, messaging turns, or explore-to-edit transitions) or 4 steps, while delivering\n# blocking (--wait) messages immediately.\n# Pass via: MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/delivery_timing_low.yaml RUN_SUFFIX=low-delivery-timing tools/run.sh coop flash_10 10 --git\nagent:\n  cost_limit: 40.0\n  step_counter: true\n  delivery_timing: true\n  delivery_max_hold_steps: 4\n  delivery_boundary_mode: natural\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 100,
+    "compaction_token_trigger": 28000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.103.2"
+  },
+  "started_at": "2026-11-02T06:42:39.318767",
+  "completed_at": "2026-11-02T07:02:24.196439",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-flash-core-low-delivery-timing",
+  "headline": {
+    "pairs": 10,
+    "passed": 5,
+    "pass_rate": 0.5,
+    "merge_conflicts": 3,
+    "agents_at_step_limit": 2,
+    "agents_errored": 0,
+    "cost_usd": 3.25,
+    "cost_per_pair_usd": 0.325,
+    "wall_minutes": 19.7
+  },
+  "load": {
+    "peak_input_tokens_per_min": 4549345,
+    "median_input_tokens_per_min": 267946,
+    "peak_calls_per_min": 357,
+    "total_retries": 0,
+    "rate_limit_retries": 0,
+    "server_busy_retries": 0
+  }
+}

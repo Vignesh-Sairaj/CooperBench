@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-periodic",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "vertex_ai/gemini-3-flash-preview",
+  "subset": "flash_10",
+  "concurrency": 10,
+  "key_slot": null,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-periodic -s flash_10 -a mini_swe_agent_v2 -m vertex_ai/gemini-3-flash-preview --agent-config configs/variants/delivery_timing_periodic_low.yaml --setting coop -c 10 --backend docker --git",
+  "git_commit": "7bb94c6cc09035e037d70f38b535e08ad41236e9",
+  "git_dirty": true,
+  "agent_config_path": "configs/variants/delivery_timing_periodic_low.yaml",
+  "agent_config": "# Counterfactual sweep config: Periodic Delivery Batching (low thinking, gemini-3-flash-preview).\n# Tests whether natural workflow boundaries outperform blind periodic every-4-steps batching.\n# Pass via: MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/delivery_timing_periodic_low.yaml RUN_SUFFIX=low-delivery-periodic tools/run.sh coop flash_10 10 --git\nagent:\n  cost_limit: 40.0\n  step_counter: true\n  delivery_timing: true\n  delivery_max_hold_steps: 4\n  delivery_boundary_mode: periodic\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 100,
+    "compaction_token_trigger": 28000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.103.2"
+  },
+  "started_at": "2026-11-02T19:51:58.175269",
+  "completed_at": "2026-11-02T20:03:10.595502",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-periodic",
+  "headline": {
+    "pairs": 10,
+    "passed": 5,
+    "pass_rate": 0.5,
+    "merge_conflicts": 3,
+    "agents_at_step_limit": 0,
+    "agents_errored": 0,
+    "cost_usd": 4.9618,
+    "cost_per_pair_usd": 0.4962,
+    "wall_minutes": 11.2
+  },
+  "load": {
+    "peak_input_tokens_per_min": 5054345,
+    "median_input_tokens_per_min": 1216490,
+    "peak_calls_per_min": 291,
+    "total_retries": 0,
+    "rate_limit_retries": 0,
+    "server_busy_retries": 0
+  }
+}

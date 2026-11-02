@@ -1,0 +1,11 @@
+repo,task_id,feature_a,feature_b,setting,both_passed,feature_a_passed,feature_b_passed,merge_status,merge_strategy,eval_error,n_agents,agents_at_step_limit,agents_errored,steps_total,cost_usd,duration_s,messages_sent,patch_lines_total
+dottxt_ai_outlines_task,1655,1,3,coop,True,True,True,clean,naive,,2,0,0,120,0.639466,1536.4,18,96
+dspy_task,8563,1,4,coop,False,False,True,clean,naive,,2,2,0,200,1.898685,2390.4,9,223
+go_chi_task,27,3,4,coop,False,False,True,clean,naive,,2,0,0,183,1.197113,2549.5,40,507
+llama_index_task,17244,5,6,coop,False,True,False,clean,naive,,2,0,0,190,1.096789,1550.6,13,165
+openai_tiktoken_task,0,4,8,coop,True,True,True,clean,naive,,2,0,0,163,1.053464,2036.9,30,76
+pallets_click_task,2800,1,4,coop,False,True,False,clean,naive,,2,0,0,200,1.223055,2025.4,24,404
+pallets_jinja_task,1559,5,8,coop,False,False,True,clean,naive,,2,1,0,200,2.71032,4071.7,3,458
+pallets_jinja_task,1621,6,10,coop,True,True,True,clean,naive,,2,0,0,200,1.860991,3406.0,44,830
+react_hook_form_task,153,2,6,coop,False,False,False,conflicts,naive,,2,0,0,200,1.804383,2998.4,12,566
+typst_task,6554,2,6,coop,False,False,False,conflicts,naive,,2,0,0,198,1.131007,2891.2,29,331
