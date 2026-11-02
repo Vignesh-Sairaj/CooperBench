@@ -1,0 +1,19 @@
+# Variant config: "saturation" run to find which tasks solo can solve given ample budget.
+# 500 steps, compaction at 64K tokens, step counter, high thinking, $40 per-agent cost cap,
+# and containers kept alive for 10 hours (the 2-hour default would end long runs early).
+# Pass via: AGENT_CONFIG=configs/variants/saturation_high.yaml RUN_SUFFIX=saturation-high tools/run.sh solo ...
+agent:
+  cost_limit: 40.0
+  step_limit: 500
+  compaction_token_trigger: 64000
+  step_counter: true
+
+environment:
+  container_timeout: "10h"
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true

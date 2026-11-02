@@ -150,6 +150,10 @@ class MiniSweAgentV2Runner:
             "cwd": "/workspace/repo",
             "timeout": 10800,
         }
+        # Opt-in: let a config keep containers alive longer than the 2h default, for long runs
+        # (for example 500 steps). Without this, `environment.container_timeout` was ignored.
+        if env_cfg.get("container_timeout"):
+            env_kwargs["container_timeout"] = str(env_cfg["container_timeout"])
         container_env = dict(env_cfg.get("env") or {})
         # In team mode, propagate the CB_TEAM_* env vars into every
         # docker-exec the agent does so ``coop-task-*`` works without
