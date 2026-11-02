@@ -5,7 +5,8 @@ Every paper table and report should be reproducible from `results/` in Git alone
 ## Workflow
 
 ```bash
-tools/run.sh coop flash_10 4 --git                                   # run, with launch.json + console.log
+set -a; source .env; set +a
+tools/run.sh coop flash_10 10 --git                                  # run, with launch.json + console.log
 uv run --frozen python tools/export_results.py <run_name>            # write results/<run_name>/
 uv run --frozen hf upload agent-coordination-lab/cooperbench-run-logs \
   logs/<run_name> <run_name> --repo-type dataset                     # archive raw logs

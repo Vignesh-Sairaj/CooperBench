@@ -1,43 +1,43 @@
 # Model Config
 
-Every run uses the same model setup, so differences in results come from the coordination method, not the model. This note covers that setup, how to launch it, and how many agents to run per API key.
+Every run uses the same model setup, so differences in results come from the coordination method, not the model. This note covers that setup, how to launch it, and how many agents to run per GCP project or API key.
 
 ## Reference Setup
 
-All our runs, baselines and intervention arms alike, use this setup. It is the upstream harness code at `63b9d44`, unmodified, plus our agent config. It is **not** the upstream default setup: our config raises the cost cap from `$3` to `$10` and turns on `HIGH` thinking instead of the `LOW` thinking LiteLLM silently sends.
+All new runs, baselines and intervention arms alike, use this setup. It is the upstream harness code at `63b9d44`, unmodified, plus our agent config. It is **not** the upstream default setup: our config raises the cost cap from `$3` to `$10` and turns on `HIGH` thinking instead of the `LOW` thinking LiteLLM silently sends.
 
 | Flag or setting | Value |
 | :--- | :--- |
 | Code | `main` of our fork, with every intervention flag off |
 | Harness | `-a mini_swe_agent_v2 --backend docker` |
-| Model and provider | `-m gemini/gemini-3.8-flash` (AI Studio key in `GEMINI_API_KEY`) |
+| Model and provider | `-m vertex_ai/gemini-3.8-flash` (`VERTEXAI_PROJECT` in `.env`, `VERTEXAI_LOCATION=global`, `gcloud` ADC) |
 | Agent config | `--agent-config configs/gemini_3_8_flash_high.yaml` |
 | Step limit and compaction | Upstream defaults: 100 steps, compaction at 28K tokens |
-| Concurrency | About 8 agents per key at 28K: `-c 8` for `solo`, `-c 4` for `coop` and `team` (other models and thinking levels: see [Concurrency](#recommended--c-per-api-key)) |
+| Concurrency | `-c 10` per Vertex AI project (for AI Studio `gemini/*` keys, see [Recommended `-c` per API key](#recommended--c-per-api-key)) |
 | Run name | Leave out `-n`; intervention arms add a suffix (see [results_format.md](results_format.md)) |
 | Subsets | `flash_10` for the baseline screen, `flash` for intervention arms |
 
-[`tools/run.sh`](../tools/run.sh) fills in all of these (with `AGENT_CONFIG` available for controlled variant configs under `configs/variants/`), so prefer it over calling `cooperbench run` directly. The four baselines on `flash_10`:
+[`tools/run.sh`](../tools/run.sh) fills in all of these (with `AGENT_CONFIG` available for controlled variant configs under `configs/variants/`, and `MODEL=gemini/gemini-3.8-flash` still supported for AI Studio keys), so prefer it over calling `cooperbench run` directly. The four baselines on `flash_10`:
 
 | Setting | Command | Run name |
 | :--- | :--- | :--- |
-| `solo` | `tools/run.sh solo flash_10 8` | `solo-msa_v2-gemini-3-8-flash-flash_10` |
-| `coop` | `tools/run.sh coop flash_10 4` | `coop-msa_v2-gemini-3-8-flash-flash_10` |
-| `coop --git` | `tools/run.sh coop flash_10 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
-| `team` | `tools/run.sh team flash_10 4` | `team-msa_v2-gemini-3-8-flash-flash_10` |
+| `solo` | `tools/run.sh solo flash_10 10` | `solo-msa_v2-gemini-3-8-flash-flash_10` |
+| `coop` | `tools/run.sh coop flash_10 10` | `coop-msa_v2-gemini-3-8-flash-flash_10` |
+| `coop --git` | `tools/run.sh coop flash_10 10 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
+| `team` | `tools/run.sh team flash_10 10` | `team-msa_v2-gemini-3-8-flash-flash_10` |
 
-**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. The per-turn step counter fixes most of that at the same cost ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)), and we have proposed making it standard. The thinking level and budget will be chosen from the 500-step `solo` saturation runs. Whatever the team adopts goes into the reference agent config, and every baseline is rerun.
+**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. The per-turn step counter fixes most of that at the same cost ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)), and we have proposed making it standard. The thinking level and budget will be chosen from the 500-step `solo` saturation runs. Whatever the team adopts goes into the reference agent config, and every baseline is rerun on `vertex_ai/gemini-3.8-flash`.
 
 ## Settings and Reasons
 
 | Setting | Value | Why |
 | :--- | :--- | :--- |
 | Harness | `mini_swe_agent_v2` on local Docker | Upstream default. `openhands_sdk` only runs on Modal. |
-| Model | `gemini-3.8-flash` | Fixed in our proposal. |
+| Model and provider | `vertex_ai/gemini-3.8-flash` (`global`) | Fixed in our proposal. Vertex AI `global` uses Dynamic Shared Quota (`>3M` input TPM measured per project vs. AI Studio's hard 1M cap) with identical LiteLLM request payload and `$0.75`/`$3.75` per-1M pricing. |
 | Thinking | `HIGH` | Best quality for multi-step coding and merging. Thoughts are saved in trajectories for failure analysis. |
 | Cost cap | `$10` per agent | Upstream's `$3` cap could stop `HIGH`-thinking agents early. |
-| Step limit | 100 per agent | Upstream default. 250 steps with 64K compaction is proposed; see [baseline_ablation_flash10.md](baseline_ablation_flash10.md). |
-| Concurrency | `-c 8` (`solo`) or `-c 4` (`coop`, `team`) at 28K, one run per GCP project key | Keeps ~8 concurrent agents per 1M input-TPM project, leaving headroom for launch peaks; see [Concurrency](#concurrency). |
+| Step limit | 100 per agent | Upstream default. 250 or 500 steps with 64K compaction is under test; see [baseline_ablation_flash10.md](baseline_ablation_flash10.md). |
+| Concurrency | `-c 10` on Vertex AI `global` (or per-key limits on AI Studio `gemini/`) | Runs up to 20 agents on one Vertex AI project without hitting AI Studio's 1M input-TPM wall; see [Concurrency](#concurrency). |
 
 Thinking and the cost cap are set in [`configs/gemini_3_8_flash_high.yaml`](../configs/gemini_3_8_flash_high.yaml).
 
@@ -48,19 +48,26 @@ For whole subsets, use `tools/run.sh` ([workflow.md](workflow.md)). To try one p
 ```bash
 docker pull akhatua/cooperbench-dottxt-ai-outlines:task1371
 
+VERTEXAI_PROJECT=<your-gcp-project> VERTEXAI_LOCATION=global \
 uv run --frozen cooperbench run \
   -r dottxt_ai_outlines_task -t 1371 -f 1,2 \
   -a mini_swe_agent_v2 \
-  -m gemini/gemini-3.8-flash \
+  -m vertex_ai/gemini-3.8-flash \
   --agent-config configs/gemini_3_8_flash_high.yaml \
   --setting coop --git --backend docker
 ```
 
-Use the same provider (`gemini/`, `vertex_ai/`, or `openrouter/`) for every run in a comparison. With OpenRouter, check on one test call that the reasoning token count looks like `HIGH` before bulk runs; we have not verified that OpenRouter passes the setting through.
+Use the same provider (`vertex_ai/`, `gemini/`, or `openrouter/`) for every run in a comparison: rate-limit pauses and endpoint latency shift relative turn pacing and message arrival order in `coop`. Always keep `VERTEXAI_LOCATION=global` for Vertex AI (regional endpoints add a `1.1x` cost multiplier in LiteLLM or return `404`). Note that `_generate_run_name` strips the provider prefix, so `vertex_ai/gemini-3.8-flash` and `gemini/gemini-3.8-flash` produce the same run folder name (`run.json` records the full `model` string).
 
 ## Concurrency
 
-What limits us is the Gemini API's cap of 1M input tokens per minute (TPM), which applies per GCP project, not the machine (10 agent containers used a load under 8 on 128 cores and about 34 GB of RAM). The other limits, 1,000 requests per minute and unlimited requests per day, are never reached.
+### Vertex AI (`vertex_ai/`, recommended)
+
+On `VERTEXAI_LOCATION=global`, Vertex AI uses Dynamic Shared Quota rather than a fixed 1M input-TPM ceiling per project: `flash_10` runs at `-c 10` (20 concurrent agents in `coop`) measured over 3M input tokens per minute on a single project with zero `429` retries. Because Dynamic Shared Quota is shared capacity, peak hours can still see occasional `429` bursts, so keep checking retry counts after each run. To scale across multiple projects in parallel, set `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on in `.env` and pass `KEY_SLOT=<n>` ([workflow.md](workflow.md)).
+
+### AI Studio (`gemini/`)
+
+Earlier runs used `MODEL=gemini/gemini-3.8-flash` (AI Studio keys). There the limit is AI Studio's hard cap of 1M input tokens per minute (TPM) per GCP project, not the machine (10 agent containers used a load under 8 on 128 cores and about 34 GB of RAM). The other limits, 1,000 requests per minute and unlimited requests per day, are never reached.
 
 ### Measured load per agent
 

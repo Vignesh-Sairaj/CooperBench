@@ -17,20 +17,33 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    uv sync --frozen --extra dev
    ```
 
-4. **Keys** in `.env` at the repo root (gitignored, never commit it):
+4. **Vertex AI and keys** in `.env` at the repo root (gitignored, never commit project IDs or keys):
+
+   Enable the Vertex AI API on your GCP project(s) once and authenticate Application Default Credentials:
 
    ```bash
-   GEMINI_API_KEY=...   # AI Studio key for gemini/gemini-3.8-flash
-   HF_TOKEN=hf_...      # for the raw logs archive, see logs_archive.md
-
-   # Optional, for parallel runs (KEY_SLOT=<n> picks GEMINI_API_KEY_<n>).
-   # Use one key per GCP project: rate limits apply per project, not per key.
-   GEMINI_API_KEY_1=... # project 1 (can be the same key as GEMINI_API_KEY)
-   GEMINI_API_KEY_2=... # project 2
-   GEMINI_API_KEY_3=... # project 3
+   gcloud services enable aiplatform.googleapis.com --project=<your-gcp-project>
+   gcloud auth application-default login
    ```
 
-   With only `GEMINI_API_KEY`, runs go one at a time. Add `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, and so on (one per GCP project) to run different experiments in parallel; see step 2 under [Run a Benchmark](#run-a-benchmark).
+   Then create `.env`:
+
+   ```bash
+   VERTEXAI_PROJECT=<your-gcp-project>
+   VERTEXAI_LOCATION=global
+   HF_TOKEN=hf_...          # for the raw logs archive, see logs_archive.md
+
+   # Optional, for parallel runs across separate GCP projects (KEY_SLOT=<n> picks VERTEXAI_PROJECT_<n>):
+   VERTEXAI_PROJECT_1=<project-1>
+   VERTEXAI_PROJECT_2=<project-2>
+   VERTEXAI_PROJECT_3=<project-3>
+
+   # Optional, only if running AI Studio models via MODEL=gemini/...:
+   # GEMINI_API_KEY=...
+   # GEMINI_API_KEY_1=...
+   ```
+
+   With only `VERTEXAI_PROJECT`, runs go one at a time. Add `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on (the same `gcloud` login works across all projects your account can access) to run different experiments in parallel; see step 2 under [Run a Benchmark](#run-a-benchmark).
 
 5. **Raw logs archive:** join the Hugging Face organization and create your token, as described in [logs_archive.md](logs_archive.md).
 
@@ -42,26 +55,27 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    tools/pull_images.sh flash_10
    ```
 
-2. **Run** with the [reference setup](model_config.md#reference-setup). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model, agent config, and backend, and names the run. With the reference setup, run 8 pairs at once for `solo` and 4 for `coop` and `team` (about 8 agents either way). Low thinking levels, other models, and larger compaction need fewer; see the table in [model_config.md](model_config.md#recommended--c-per-api-key):
+2. **Run** with the [reference setup](model_config.md#reference-setup). First load `.env` (`set -a; source .env; set +a`). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model (`vertex_ai/gemini-3.8-flash`), agent config, and backend, and names the run. On Vertex AI `global`, run 10 pairs at once (`-c 10`); if using AI Studio (`MODEL=gemini/...`), follow the per-key table in [model_config.md](model_config.md#recommended--c-per-api-key):
 
    ```bash
-   tools/run.sh solo flash_10 8               # solo-msa_v2-gemini-3-8-flash-flash_10
-   tools/run.sh coop flash_10 4 --git         # coop-msa_v2-git-gemini-3-8-flash-flash_10
+   set -a; source .env; set +a
+   tools/run.sh solo flash_10 10              # solo-msa_v2-gemini-3-8-flash-flash_10
+   tools/run.sh coop flash_10 10 --git        # coop-msa_v2-git-gemini-3-8-flash-flash_10
    ```
 
-   To try different budgets, pass a variant config and a name suffix, for example `RUN_SUFFIX=steps250-compact64k AGENT_CONFIG=configs/variants/steps250_compact64k.yaml tools/run.sh solo flash_10 4`. With 64K compaction each agent uses about twice the tokens, so halve the pairs at once. To use another model, set `MODEL`, for example `MODEL=gemini/gemini-3-flash-preview AGENT_CONFIG=configs/variants/thinking_minimal.yaml RUN_SUFFIX=minimal tools/run.sh solo flash_10 8`.
+   To try different budgets, pass a variant config and a name suffix, for example `RUN_SUFFIX=steps250-compact64k AGENT_CONFIG=configs/variants/steps250_compact64k.yaml tools/run.sh solo flash_10 10`. To use another model, set `MODEL`, for example `MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/thinking_minimal.yaml RUN_SUFFIX=minimal tools/run.sh solo flash_10 10`.
 
-   Run one benchmark at a time per GCP project key (see [Concurrency](model_config.md#concurrency)). A run over `flash_10` takes one to two hours. Grading runs automatically at the end.
+   Run one benchmark at a time per GCP project (see [Concurrency](model_config.md#concurrency)). Grading runs automatically at the end.
 
-   To run different experiments in parallel, give each run its own key with `KEY_SLOT` (each in its own terminal, after `set -a; source .env; set +a`). Each parallel run needs a distinct run name:
+   To run different experiments in parallel, give each run its own project slot with `KEY_SLOT` (each in its own terminal, after `set -a; source .env; set +a`). Each parallel run needs a distinct run name:
 
    ```bash
-   KEY_SLOT=1 tools/run.sh solo flash_10 8
-   KEY_SLOT=2 tools/run.sh team flash_10 4
-   KEY_SLOT=3 RUN_SUFFIX=steps250 AGENT_CONFIG=configs/variants/steps250.yaml tools/run.sh coop flash_10 4 --git
+   KEY_SLOT=1 tools/run.sh solo flash_10 10
+   KEY_SLOT=2 tools/run.sh team flash_10 10
+   KEY_SLOT=3 RUN_SUFFIX=steps250 AGENT_CONFIG=configs/variants/steps250.yaml tools/run.sh coop flash_10 10 --git
    ```
 
-   `launch.json` and `run.json` record the slot number (never the key). `resources.log` counts every container on the machine, including other parallel runs.
+   `launch.json` and `run.json` record only the slot number, never project IDs or API keys. `resources.log` counts every container on the machine, including other parallel runs.
 
    To spread one large subset (for example the 50-pair `flash`) over several keys, split it into shards, run one shard per key, and merge them afterwards into a single run ([`tools/shards.py`](../tools/shards.py)):
 

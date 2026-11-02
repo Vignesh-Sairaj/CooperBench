@@ -17,7 +17,7 @@
 ## Running Benchmarks
 
 - Run every benchmark with the [reference setup](notes/model_config.md#reference-setup) (use `tools/run.sh`), identical across every run in a comparison. Follow [`notes/workflow.md`](notes/workflow.md) for the full sequence from pre-pulling images to committing results.
-- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). Use ~8 concurrent agents per Gemini API key for `gemini-3.8-flash` at `high` thinking and 28K compaction (`-c 8` for `solo`, `-c 4` for `coop` and `team`); low thinking levels, other models, and larger compaction need fewer, per the table in [`notes/model_config.md`](notes/model_config.md#recommended--c-per-api-key), one run at a time per GCP project key (run separate experiments in parallel on keys from separate projects with `KEY_SLOT`, see [`notes/workflow.md`](notes/workflow.md)), and check the retry counts after each run (see [`notes/model_config.md`](notes/model_config.md#concurrency)).
+- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). With Vertex AI (`vertex_ai/gemini-3.8-flash`, `VERTEXAI_LOCATION=global`), a single GCP project handles `-c 10` (`solo`, `coop`, or `team`); when running via AI Studio (`MODEL=gemini/gemini-3.8-flash`), use the per-key concurrency table in [`notes/model_config.md`](notes/model_config.md#recommended--c-per-api-key). Run one experiment at a time per project slot (`KEY_SLOT`, see [`notes/workflow.md`](notes/workflow.md)), and check retry counts after each run (see [`notes/model_config.md`](notes/model_config.md#concurrency)).
 
 ## Before Pushing
 

@@ -4,17 +4,22 @@
 # Usage:
 #   tools/run.sh <setting> <subset> <concurrency> [extra cooperbench run args...]
 #   tools/run.sh solo flash_10 10
-#   tools/run.sh coop flash_10 5 --git
+#   tools/run.sh coop flash_10 10 --git
 #
 # The run name is the CLI's own auto-generated name. To add a method suffix for an
 # intervention or variant arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
 # Set AGENT_CONFIG to override the default config (configs/gemini_3_8_flash_high.yaml), and
-# MODEL to use another model (default gemini/gemini-3.8-flash; the run name includes it).
+# MODEL to use another model or provider (default vertex_ai/gemini-3.8-flash; the run name
+# strips the provider prefix and keeps the model name).
 #
-# Gemini rate limits are per GCP project, so parallel runs need keys from different
-# projects. Put them in .env as GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... and set
-# KEY_SLOT=<n> to run with GEMINI_API_KEY_<n>. Without KEY_SLOT the run uses
-# GEMINI_API_KEY. Only the slot number is recorded, never the key.
+# Credentials come from .env (gitignored):
+#   - For vertex_ai/* models (default): authenticate once with
+#     `gcloud auth application-default login`, set VERTEXAI_PROJECT (and optional
+#     VERTEXAI_PROJECT_1, VERTEXAI_PROJECT_2, ... for parallel runs via KEY_SLOT=<n>),
+#     and VERTEXAI_LOCATION defaults to "global".
+#   - For gemini/* models (AI Studio): set GEMINI_API_KEY (and optional
+#     GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... for KEY_SLOT=<n>).
+# Only the slot number is recorded in launch.json, never project IDs or API keys.
 #
 # Writes into logs/<run_name>/:
 #   launch.json     command, git commit, agent config, package versions, concurrency
@@ -33,11 +38,27 @@ fi
 SETTING="$1"; SUBSET="$2"; CONC="$3"; shift 3
 EXTRA=("$@")
 UV_RUN="${UV_RUN:-uv run --frozen}"
-MODEL="${MODEL:-gemini/gemini-3.8-flash}"
+MODEL="${MODEL:-vertex_ai/gemini-3.8-flash}"
 AGENT="mini_swe_agent_v2"
 CONFIG="${AGENT_CONFIG:-configs/gemini_3_8_flash_high.yaml}"
 KEY_SLOT="${KEY_SLOT:-}"
-if [[ -n "$KEY_SLOT" ]]; then
+if [[ "$MODEL" == vertex_ai/* ]]; then
+  export VERTEXAI_LOCATION="${VERTEXAI_LOCATION:-global}"
+  if [[ -n "$KEY_SLOT" ]]; then
+    PROJ_VAR="VERTEXAI_PROJECT_${KEY_SLOT}"
+    if [[ -z "${!PROJ_VAR:-}" ]]; then
+      echo "error: KEY_SLOT=$KEY_SLOT with $MODEL requires $PROJ_VAR (run: set -a; source .env; set +a)" >&2
+      exit 1
+    fi
+    export VERTEXAI_PROJECT="${!PROJ_VAR}"
+  else
+    export VERTEXAI_PROJECT="${VERTEXAI_PROJECT:-${GOOGLE_CLOUD_PROJECT:-}}"
+    if [[ -z "$VERTEXAI_PROJECT" ]]; then
+      echo "error: $MODEL requires VERTEXAI_PROJECT in .env (run: set -a; source .env; set +a)" >&2
+      exit 1
+    fi
+  fi
+elif [[ -n "$KEY_SLOT" ]]; then
   KEY_VAR="GEMINI_API_KEY_${KEY_SLOT}"
   if [[ -z "${!KEY_VAR:-}" ]]; then
     echo "error: KEY_SLOT=$KEY_SLOT but $KEY_VAR is not set (run: set -a; source .env; set +a)" >&2
