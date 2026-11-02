@@ -7,8 +7,8 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Task | Owner | Details |
 | :--- | :--- | :--- |
 | Pre-pull the `flash_10` task images | | Each teammate on their own machine: `tools/pull_images.sh flash_10`. |
-| Decide the standard setup for all experiments | | Proposed: `gemini-3.8-flash` with the step counter on every turn, thinking level and budget chosen from the 500-step `solo` saturation runs on `flash` (in progress). See [model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md). Needs team agreement. |
-| Repeat the key comparisons on more pairs | | `solo` vs. `coop` is a tie on 10 pairs. After the saturation runs, run `coop --git` and `team` on the 50-pair `flash` subset with the chosen setup. |
+| Decide the standard setup for all experiments | | Proposed: `gemini-3.8-flash` with the step counter on every turn, `low` thinking (36/50 vs. 34/50 at `high` for one-quarter the cost), and 250 to 500 steps with 64K compaction. See [saturation_flash.md](saturation_flash.md). Needs team agreement. |
+| Repeat the key comparisons on more pairs | | In progress on the 50-pair `flash` subset: `solo` (`low` 36/50, `high` 34/50) and `coop --git` (`low` 30/50) are done; `coop --git` (`high`), `team` (`low`), and messaging-only `coop` (`low`) are running. See [saturation_flash.md](saturation_flash.md). |
 | Review the `results/` format | | See [results_format.md](results_format.md), [`tools/run.sh`](../tools/run.sh), and [`tools/export_results.py`](../tools/export_results.py). Every run is listed in [runs.md](runs.md). |
 | Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |
 | Team-size experiment with 3 and 4 agents (later) | | `coop` and `team` already start one agent per feature (`-f 1,2,3` runs 3 agents), and `team3_250` / `team3_all` list three-feature groups. Blocker: the grader only checks two features (the local path uses the first two; the batch path crashes on three). Extend it to merge all patches and require every feature's tests to pass. |

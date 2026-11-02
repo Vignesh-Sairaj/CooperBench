@@ -40,5 +40,6 @@ How to read the table:
 | [`solo-...-flash-saturation-low`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `solo` | 3.8 Flash, low | `flash` | 500 | 64K | Step counter; `$40` cap | Which tasks can `solo` solve with ample budget? | 36/50 | `$25.70` |
 | [`team-...-flash_10-stepcounter`](../results/team-msa_v2-gemini-3-8-flash-flash_10-stepcounter/summary.md) | `team` | 3.8 Flash, high | `flash_10` | 100 | 28K | Step counter; lead and member | `team` vs. `coop --git` with the counter (8/10) | 4/10 | `$12.68` |
 | [`solo-...-flash-saturation-high`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-high/summary.md) | `solo` | 3.8 Flash, high | `flash` | 500 | 64K | Step counter; `$40` cap | Does high thinking solve tasks `low` misses (36/50)? | 34/50 | `$110.14` |
+| [`coop-...-git-...-flash-saturation-low`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low/summary.md) | `coop --git` | 3.8 Flash, low | `flash` | 500 | 64K | Step counter; `$40` cap | Coordination gap vs. `solo` `low` (36/50) with ample budget | 30/50 | `$39.85` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
