@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-8-flash-core-stepcounter",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3.8-flash",
+  "subset": "core",
+  "concurrency": 4,
+  "key_slot": 2,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-8-flash-core-stepcounter -s core -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/stepcounter.yaml --setting coop -c 4 --backend docker --git",
+  "git_commit": "d404b497acf0387529ceef8f8d52b6197b06e940",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/stepcounter.yaml",
+  "agent_config": "# Variant config: show \"Step n of N: k left\" on every turn (agent.step_counter, off by default).\n# Same as the reference config otherwise (upstream step limit and compaction).\n# Pass via: AGENT_CONFIG=configs/variants/stepcounter.yaml RUN_SUFFIX=stepcounter tools/run.sh solo ...\nagent:\n  cost_limit: 10.0\n  step_counter: true\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: high\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 100,
+    "compaction_token_trigger": 28000,
+    "thinking_level": "high"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-01T15:40:05.465132",
+  "completed_at": "2026-11-01T16:47:34.203283",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-8-flash-core-stepcounter",
+  "headline": {
+    "pairs": 10,
+    "passed": 4,
+    "pass_rate": 0.4,
+    "merge_conflicts": 2,
+    "agents_at_step_limit": 7,
+    "agents_errored": 0,
+    "cost_usd": 13.1554,
+    "cost_per_pair_usd": 1.3155,
+    "wall_minutes": 67.5
+  },
+  "load": {
+    "peak_input_tokens_per_min": 1202266,
+    "median_input_tokens_per_min": 483951,
+    "peak_calls_per_min": 77,
+    "total_retries": 24,
+    "rate_limit_retries": 23,
+    "server_busy_retries": 1
+  }
+}

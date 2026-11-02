@@ -46,7 +46,7 @@ A teammate ran vanilla upstream with both models and got different results from 
 
 - **The counter changes when agents publish, not how long they work.** In `solo`, 6 of 10 agents still used all 100 steps, but 9 of 10 pushed work before being stopped (0 to 1 of 10 without the counter). Most agents pushed several times along the way, so their last pushed version was graded. In `coop --git`, 19 of 20 agents pushed work (9 of 20 without it).
 - **Cost stayed the same:** `$9.11` (`solo`) and `$12.53` (`coop --git`), similar to the runs without the counter.
-- **On harder pairs it is not enough:** on the `core` subset (which includes three pairs where both features change the same function), `solo` with the counter scored 5/10, and all 10 agents used every step.
+- **On harder pairs it is not enough:** on the `core` subset (which includes three pairs where both features change the same function), `solo` with the counter scored 5/10, and all 10 agents used every step. `coop --git` scored 4/10 there, and its only two merge conflicts were on same-function pairs (`dspy_task/8563`, `react_hook_form_task/153`).
 
 ## `team` Baseline
 
