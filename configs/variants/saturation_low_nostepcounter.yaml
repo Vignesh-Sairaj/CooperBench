@@ -1,0 +1,18 @@
+# Variant config: 500-step saturation control without the per-turn step counter.
+# 500 steps, compaction at 64K tokens, low thinking, $40 per-agent cost cap,
+# and containers kept alive for 10 hours (same as saturation_low.yaml except step_counter is off).
+# Pass via: AGENT_CONFIG=configs/variants/saturation_low_nostepcounter.yaml RUN_SUFFIX=saturation-low-nostepcounter tools/run.sh solo ...
+agent:
+  cost_limit: 40.0
+  step_limit: 500
+  compaction_token_trigger: 64000
+
+environment:
+  container_timeout: "10h"
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: low
+      includeThoughts: true
