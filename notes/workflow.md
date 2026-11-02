@@ -17,33 +17,46 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    uv sync --frozen --extra dev
    ```
 
-4. **Vertex AI and keys** in `.env` at the repo root (gitignored, never commit project IDs or keys):
+4. **Vertex AI and `.env`** at the repo root (gitignored, never commit project IDs or keys):
 
-   Enable the Vertex AI API on your GCP project(s) once and authenticate Application Default Credentials:
+   1. **Enable the Vertex AI API** (`aiplatform.googleapis.com`) once on each GCP project you plan to use, either in the browser at `https://console.cloud.google.com/apis/library/aiplatform.googleapis.com?project=<project-id>` or via `gcloud`:
 
-   ```bash
-   gcloud services enable aiplatform.googleapis.com --project=<your-gcp-project>
-   gcloud auth application-default login
-   ```
+      ```bash
+      gcloud services enable aiplatform.googleapis.com --project=<project-id>
+      ```
 
-   Then create `.env`:
+   2. **Authenticate Application Default Credentials** once (writes `~/.config/gcloud/application_default_credentials.json`; the same login works across every project your account can access):
 
-   ```bash
-   VERTEXAI_PROJECT=<your-gcp-project>
-   VERTEXAI_LOCATION=global
-   HF_TOKEN=hf_...          # for the raw logs archive, see logs_archive.md
+      ```bash
+      gcloud auth application-default login
+      ```
 
-   # Optional, for parallel runs across separate GCP projects (KEY_SLOT=<n> picks VERTEXAI_PROJECT_<n>):
-   VERTEXAI_PROJECT_1=<project-1>
-   VERTEXAI_PROJECT_2=<project-2>
-   VERTEXAI_PROJECT_3=<project-3>
+   3. **Create `.env`** using each project's **Project ID** (the lowercase slug shown under "Project ID" in Cloud Console, not the numeric project number or display name), with no spaces around `=`:
 
-   # Optional, only if running AI Studio models via MODEL=gemini/...:
-   # GEMINI_API_KEY=...
-   # GEMINI_API_KEY_1=...
-   ```
+      ```bash
+      VERTEXAI_LOCATION=global
+      VERTEXAI_PROJECT=<project-1-id>
+      HF_TOKEN=hf_...          # for the raw logs archive, see logs_archive.md
 
-   With only `VERTEXAI_PROJECT`, runs go one at a time. Add `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on (the same `gcloud` login works across all projects your account can access) to run different experiments in parallel; see step 2 under [Run a Benchmark](#run-a-benchmark).
+      # Optional, for parallel runs across separate GCP projects (KEY_SLOT=<n> picks VERTEXAI_PROJECT_<n>):
+      VERTEXAI_PROJECT_1=<project-1-id>
+      VERTEXAI_PROJECT_2=<project-2-id>
+      VERTEXAI_PROJECT_3=<project-3-id>
+      VERTEXAI_PROJECT_4=<project-4-id>
+
+      # Optional, only if running AI Studio models via MODEL=gemini/...:
+      # GEMINI_API_KEY=...
+      # GEMINI_API_KEY_1=...
+      ```
+
+   4. **Verify `.env` and Vertex access** with a one-token test call before launching a benchmark:
+
+      ```bash
+      set -a; source .env; set +a
+      uv run --frozen python -c 'import litellm; print(litellm.completion(model="vertex_ai/gemini-3.8-flash", messages=[{"role":"user","content":"Reply OK"}], max_tokens=16).choices[0].message.content)'
+      ```
+
+      If this returns `403 ... Agent Platform API has not been used in project ...`, enable `aiplatform.googleapis.com` on that project (step 4.1) and wait a minute for it to propagate. With only `VERTEXAI_PROJECT`, runs go one at a time; add `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on to run different experiments in parallel (see step 2 under [Run a Benchmark](#run-a-benchmark)).
 
 5. **Raw logs archive:** join the Hugging Face organization and create your token, as described in [logs_archive.md](logs_archive.md).
 
