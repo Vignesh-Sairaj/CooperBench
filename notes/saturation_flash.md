@@ -22,6 +22,7 @@ Every run below uses `gemini-3.8-flash` on the 50-pair `flash` subset, a 500-ste
 | [`team`](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **22/50 (44%)** | 0/100 | 30/50 | 74.5 | 0 | `$35.10` | 433 min |
 | [`solo`, no step counter](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 84 | 0 | `$25.64` | 309 min |
 | [`solo`, repeat on Vertex AI](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 74 | 0 | `$33.47` | 180 min |
+| [`coop --git`, repeat on Vertex AI](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `low` | **30/50 (60%)** | 0/100 | 2/50 | 173 per pair | n/a | `$55.29` | 257 min |
 
 Every run uses the step counter except the no-counter control. All runs call the model through AI Studio except the Vertex AI repeat. Runs at `medium` thinking and a messaging-only `coop` run at `low` are in progress and will be added as they finish.
 
@@ -47,6 +48,8 @@ Turning the step counter off in `solo` at `low` thinking (everything else identi
 ## Run-to-Run Variation
 
 The same `solo` `low` setup scored 36/50 on AI Studio and 32/50 on Vertex AI. `solo` makes the same model calls on either provider, so the gap is ordinary variation: 31 pairs passed in both runs, 5 only on AI Studio, and 1 only on Vertex AI. Single-run differences of about 4 to 6 pairs on these 50 pairs, including the 6-pair gap between `solo` and `coop --git` at `low` thinking, need repeated runs or paired tests before they count as effects.
+
+The `coop --git` `low` setup was also repeated on Vertex AI and scored 30/50 both times (28 pairs passed in both). Averaged over two runs each, `solo` scores about 34/50 and `coop --git` 30/50, so the coordination gap at `low` thinking is about 4 pairs rather than 6. Five `solo`-solvable pairs failed in both `coop --git` runs, including both `pallets_click_task/2068` pairs where agents work around a line both features need.
 
 ## `solo` vs. `coop --git` at `low` Thinking
 

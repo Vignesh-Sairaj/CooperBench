@@ -65,5 +65,6 @@ How to read the table:
 | [`coop-...-git-...-flash-low-stepcounter`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-low-stepcounter/summary.md) | `coop --git` | 3.8 Flash, low | `flash` | 100 | 28K | Step counter; `$40` cap | 50-pair `flash` control for `3.8 Flash` (vs. `solo` 36/50) | 27/50 | `$33.95` |
 | [`coop-...-git-...-flash-low-intents`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-low-intents/summary.md) | `coop --git` | 3.8 Flash, low | `flash` | 100 | 28K | Step counter; speech-act intent tags | Do intent tags raise clean-merge passes and cut chatter on 50 pairs? | 28/50 | `$35.19` |
 | [`solo-...-flash-saturation-low-vertex`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `solo` | 3.8 Flash, low (Vertex AI) | `flash` | 500 | 64K | Step counter; `$40` cap | Same setup on Vertex AI: run-to-run variation, reference for Vertex runs | 32/50 | `$33.47` |
+| [`coop-...-git-...-flash-saturation-low-vertex`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `coop --git` | 3.8 Flash, low (Vertex AI) | `flash` | 500 | 64K | Step counter; `$40` cap | Repeat of `coop --git` `low` (30/50); reference for Vertex intervention arms | 30/50 | `$55.29` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
