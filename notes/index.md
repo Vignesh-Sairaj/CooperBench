@@ -20,7 +20,7 @@ A map of the notes in this folder.
 | [runs.md](runs.md) | Every benchmark run: settings, the question it answers, result, and a link to its summary. |
 | [baseline_ablation_flash10.md](baseline_ablation_flash10.md) | Step limit and compaction experiments on `flash_10`: why we ran them and what we concluded. |
 | [model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md) | Two Gemini models at different thinking levels, the per-turn step counter, and the `team` baseline on `flash_10`. |
-| [saturation_flash.md](saturation_flash.md) | 50-pair `flash` saturation runs (`solo` `low` vs. `high`, `coop --git` `low`, and `team` `low` with ample budget). |
+| [saturation_flash.md](saturation_flash.md) | 50-pair `flash` saturation runs (`solo` vs. `coop --git` at `low` and `high`, plus `team` at `low`). |
 
 ## Coordination Interventions
 
