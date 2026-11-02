@@ -5,8 +5,9 @@
 On the 10-pair `flash_10` subset, `solo` and `coop --git` with `gemini-3.8-flash` were within 1 pair of each other, too close to separate on 10 pairs ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)). The 500-step, 64K-compaction "saturation" runs below measure single-agent capability limits and multi-agent coordination losses on the 50-pair `flash` subset without budget starvation:
 
 - **`low` thinking matches or beats `high` thinking in `solo` at one-quarter the cost.** `solo` scored **36/50 (72%)** for `$25.70` at `low` thinking and **34/50 (68%)** for `$110.14` at `high` thinking. Across both runs, `solo` solved **37/50 (74%)**, leaving **13/50 (26%)** unsolved at either thinking level.
-- **On 50 pairs, `solo` beats `coop --git` by 12 percentage points (`36/50` vs. `30/50`).** With the exact same `low` saturation setup, `coop --git` scored **30/50 (60%)** for `$39.85`, retaining 83% of `solo` `low` passes (`30/36`) and solving **0** pairs that `solo` `low` missed.
-- **The 6-pair coordination drop happens with zero step-limit cutoffs and zero git merge conflicts.** All 100 `coop` agents submitted well below the 500-step limit (max 186 steps), and all 50 pairs merged without text conflicts. Notably, on 2 of the 6 lost pairs, agents introduced semantic bugs specifically to avoid editing the same call line in git.
+- **On 50 pairs, `solo` beats `coop --git` by 12 percentage points (`36/50` vs. `30/50`) and `team` by 28 percentage points (`36/50` vs. `22/50`).** With the exact same `low` saturation setup, `coop --git` scored **30/50 (60%)** for `$39.85` (retaining 83% of `solo` `low` passes, `0` wins over `solo`) and `team` scored **22/50 (44%)** for `$35.10` (`0` wins over `solo`).
+- **The 6-pair `coop --git` drop happens with zero step-limit cutoffs and zero git merge conflicts.** All 100 `coop --git` agents submitted well below the 500-step limit (max 186 steps), and all 50 pairs merged without text conflicts. Notably, on 2 of the 6 lost pairs, agents introduced semantic bugs specifically to avoid editing the same call line in git.
+- **`team` falls behind `coop --git` (`22/50` vs. `30/50`) largely because of a harness submission mismatch.** Without a shared git server and under conflicting prompt instructions (one telling each agent to push only its own feature to git, another telling the lead to combine both features in a local `patch.txt` file that the grader ignores; see [harness_limits.md](harness_limits.md)), `team` hit **30/50 merge conflicts** and lost 7 `solo`-solvable pairs when the lead's local integration was never pushed to git.
 
 ## Setup
 
@@ -17,8 +18,9 @@ Every run below uses `gemini-3.8-flash` on the 50-pair `flash` subset, a 500-ste
 | [`solo`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **36/50 (72%)** | 0/50 | n/a | 84 | 0 | `$25.70` | 98 min |
 | [`solo`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-high/summary.md) | `high` | **34/50 (68%)** | 2/50 | n/a | 169 | 7 | `$110.14` | 417 min |
 | [`coop --git`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **30/50 (60%)** | 0/100 | 0/50 | 87 | 0 | `$39.85` | 346 min |
+| [`team`](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **22/50 (44%)** | 0/100 | 30/50 | 74.5 | 0 | `$35.10` | 433 min |
 
-Additional runs in progress with the same 500-step, 64K setup (`coop --git` at `high`, `team` at `low`, messaging-only `coop` at `low`, a `solo` `low` control without the step counter, and matching runs on `core`) will be added here as they finish.
+Additional runs in progress with the same 500-step, 64K setup (`coop --git` at `high`, messaging-only `coop` at `low`, a `solo` `low` control without the step counter, and matching runs on `core`) will be added here as they finish.
 
 ## `solo` Capability Ceiling: `low` vs. `high` Thinking
 
@@ -51,6 +53,20 @@ What stands out in the `coop --git` traces:
 1. **Spatial coordination succeeded completely.** Every pair exchanged between 12 and 66 messages (median 28), negotiated file and line placement, ran trial merges before submitting, and produced **0 merge conflicts** across all 50 pairs (43 clean three-way merges and 7 identical pre-merged branches).
 2. **Conflict avoidance itself caused semantic bugs (2 of the 6 losses).** In `pallets_click_task/2068` (6,7) and `pallets_click_task/2068` (7,10), both features add a new parameter to the same wrapper function and helper class. To avoid touching the same constructor call line in git, the peers explicitly agreed in chat to leave that call unchanged and attach their new setting as a class or instance attribute afterward. That kept `git merge` conflict-free and passed their own tests, and then broke the hidden unit tests that check constructor arguments.
 3. **Trial-merge checks stopped at "no git conflicts and existing tests pass" (4 of the 6 losses).** In `pallets_click_task/2800` (2,7), `pallets_click_task/2956` (1,8), `pallets_jinja_task/1621` (4,5), and `pillow_task/290` (3,5), one feature passed and one failed because of a state or edge-case bug (clearing a callback on first exit so context reuse broke, updating raw palette bytes without updating the palette wrapper object, returning `None` instead of an empty completion list, or failing to ignore malformed tuple entries). Each peer verified that `git merge` succeeded cleanly and that tests passed, without reviewing the partner's logic or shared state invariants against the feature requirements.
+
+## `team` vs. `coop --git` at `low` Thinking
+
+In `team` mode (one lead and one member with messaging, a shared task list, and a shared folder, without a shared git server), raising the budget to 500 steps and 64K compaction eliminated all step-limit cutoffs (0/100 agents at the limit, median 74.5 steps, max 212), yet accuracy stayed at **22/50 (44%)**:
+
+| Outcome (`coop --git` `low` vs. `team` `low`) | Pairs | Share |
+| :--- | :---: | :---: |
+| Both passed | 19 | 38% |
+| `coop --git` passed, `team` failed | **11** | **22%** |
+| `team` passed, `coop --git` failed | **3** | **6%** |
+| Both failed | 17 | 34% |
+
+- **Half of `team`'s losses vs. `solo` (7 of 14) come from unpushed local integrations.** Because the `team` checklist tells the lead to apply the member's patch from the shared folder and save `git diff > patch.txt`, while the base submission prompt says not to push a colleague's changes to git and the grader only reads pushed git branches ([harness_limits.md](harness_limits.md)), 7 leads on `solo`-solvable pairs pushed only their own feature and left the integrated diff in `patch.txt`. When the two standalone branches hit text conflicts on shared files, the grader's lead-alone fallback ran both feature test suites against the lead's unintegrated branch and failed the member's feature.
+- **When the lead did push both features to git, single-owner integration helped on shared call sites.** Nine of `team`'s 22 passes succeeded via the grader's lead-alone fallback after the lead's combined two-feature branch conflicted with the member's standalone branch. That single-integrator path accounted for two of `team`'s three wins over `coop --git` (`pallets_click_task/2068` (7,10) and `pallets_click_task/2800` (2,7)), because one agent editing the shared call site directly avoided the constructor-avoidance workarounds that broke two git peers. On 5 other `solo`-solvable pairs where the lead pushed a combined branch, one feature still failed hidden tests.
 
 ## Implications for Coordination Interventions
 
