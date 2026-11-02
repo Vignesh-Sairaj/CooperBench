@@ -43,6 +43,7 @@ A teammate ran vanilla upstream with both models and got different results from 
 | :--- | :---: | :---: | :---: | :---: |
 | `solo` | 1/10, 0/10 | 0/10 | **7/10** (**9/10** with 250 steps and 64K) | 2/10 (28K), 7/10 (64K) |
 | `coop --git` | 3/10 | | **8/10** | 8/10 |
+| `team` | | | 4/10 | 5/10 (28K) |
 
 - **The counter changes when agents publish, not how long they work.** In `solo`, 6 of 10 agents still used all 100 steps, but 9 of 10 pushed work before being stopped (0 to 1 of 10 without the counter). Most agents pushed several times along the way, so their last pushed version was graded. In `coop --git`, 19 of 20 agents pushed work (9 of 20 without it).
 - **It also helps at a larger budget:** with 250 steps and 64K compaction, `solo` with the counter passed 9/10 (7/10 without it), every agent pushed work, and none hit the step limit.
@@ -51,7 +52,7 @@ A teammate ran vanilla upstream with both models and got different results from 
 
 ## `team` Baseline
 
-With 250 steps and 28K compaction, `team` passed 5/10, against 8/10 for both `coop` and `coop --git`. In 4 of the 5 passes the agents' patches merged cleanly. `typst_task/6554` passed only because the lead had written both features, so after the merge conflict the grader's fallback (test the lead's patch alone) succeeded. Agents sent no direct messages and coordinated through the shared task list. One lead crashed because of a harness bug that we have since fixed ([harness_limits.md](harness_limits.md)).
+With 250 steps and 28K compaction, `team` passed 5/10, against 8/10 for both `coop` and `coop --git`. In 4 of the 5 passes the agents' patches merged cleanly. `typst_task/6554` passed only because the lead had written both features, so after the merge conflict the grader's fallback (test the lead's patch alone) succeeded. Agents sent no direct messages and coordinated through the shared task list. One lead crashed because of a harness bug that we have since fixed ([harness_limits.md](harness_limits.md)). With the step counter at 100 steps, `team` scored 4/10 against 8/10 for `coop --git`: the lead, which also integrates, used all 100 steps in 6 of 10 pairs (the member in 3 of 10).
 
 ## Conclusions
 
