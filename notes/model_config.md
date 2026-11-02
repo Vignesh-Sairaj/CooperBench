@@ -84,12 +84,19 @@ At 28K this gives 1M / (80K x 1.6) ≈ 8 agents; at 64K it gives 1M / (160K x 1.
 
 ### Recommended `-c` per API key
 
-`-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`). Keep the **concurrent agent count** equal across compared runs:
+`-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`). How many agents fit depends on the **model and thinking level**, not just the compaction threshold: at low thinking, each model call returns faster, so each agent sends more tokens per minute. Keep the **concurrent agent count** equal across compared runs.
 
-| Compaction threshold | `solo` | `coop`, `coop --git`, `team` | Concurrent agents | Measured |
-| :--- | :---: | :---: | :---: | :--- |
-| 28K (reference) | `-c 8` | `-c 4` | 8 | 10 agents (`-c 10` / `-c 5`) logged 0 to 64 `429` retries per run |
-| 64K | `-c 4` | `-c 2` | 4 | 4 agents peaked at 1,083.1K tok/min with 1 `429` retry |
+| Model, thinking | Compaction | Agents per key | `solo` | `coop`, `coop --git`, `team` | Measured |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| `gemini-3.8-flash`, high (reference) | 28K | 8 | `-c 8` | `-c 4` | 8 agents: 0 retries; 10 agents: 0 to 64 retries per run |
+| `gemini-3.8-flash`, high | 64K | 4 | `-c 4` | `-c 2` | 4 agents: 1 and 6 retries |
+| `gemini-3.8-flash`, low | 28K | 4 | `-c 4` | `-c 2` | 3 agents: 0 retries; 6 agents: 105 retries |
+| `gemini-3-flash-preview`, minimal or low | 28K | 3 | `-c 3` | `-c 1` | 3 agents: 2 and 26 retries; 6 agents: 69 and 73 retries |
+| `gemini-3-flash-preview`, high | 28K | 5 | `-c 5` | `-c 2` | 3 agents: 0 retries; 6 agents: 61 retries |
+
+Rows with only one or two measurements are estimates. Peak load per agent in these runs was about 105K to 125K tokens/min for 3.8 Flash at `high` and 28K, 270K to 300K at 64K, and 180K to 400K for either model at `minimal` or `low`.
+
+The rate-limit errors name the model as well as the project, so the limit is probably separate for each model. If so, a `gemini-3-flash-preview` run and a `gemini-3.8-flash` run could share one key without competing; we have not tested this.
 
 Throttled calls retry with 4 to 60 second backoff (up to 10 attempts). In `solo` this only adds wall time: a retry happens inside one model call and does not use a step. In `coop` and `team`, a slowed agent can make its partner give up waiting for a reply, so retries can change outcomes there. Check the `429` rate-limit and `5xx` server-busy retry counts printed by `tools/run.sh` (and saved in `run.json` under `load`) after each run. Runs before this change used `-c 10` (`solo`) and `-c 5` (`coop`) at 28K; see each run's `run.json` for its concurrency and retry counts. To run more agents at once, run separate experiments in parallel, each with a key from a different GCP project (`KEY_SLOT`, see [workflow.md](workflow.md)). Rate limits apply per project, not per key.
 

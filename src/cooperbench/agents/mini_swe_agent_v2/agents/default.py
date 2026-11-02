@@ -205,7 +205,7 @@ class DefaultAgent:
                 finally:
                     self.save(self.config.output_path)
                 if self.messages[-1].get("role") == "exit":
-                    if self._nudge_unsubmitted():
+                    if self._continue_after_exit():
                         continue
                     break
         finally:
@@ -223,6 +223,20 @@ class DefaultAgent:
         return self.messages[-1].get("extra", {})
 
     MAX_SUBMIT_NUDGES = 2
+
+    def _continue_after_exit(self) -> bool:
+        """Decide whether an exiting agent gets a submit reminder instead of ending.
+
+        The exit message is taken off the history before the reminder is added. Left in
+        place, the next model call sends a ``role: exit`` message, which LiteLLM rejects
+        (``Invalid Message passed in``), so the reminded agent crashed instead of submitting.
+        It is put back when the agent really ends, because ``run()`` returns its ``extra``.
+        """
+        exit_message = self.messages.pop()
+        if self._nudge_unsubmitted():
+            return True
+        self.messages.append(exit_message)
+        return False
 
     def _nudge_unsubmitted(self) -> bool:
         """Tell an agent that is ending with unshared work, instead of letting it end.

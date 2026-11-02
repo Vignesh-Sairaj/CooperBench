@@ -14,6 +14,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Review the `results/` format | | See [results_format.md](results_format.md), [`tools/run.sh`](../tools/run.sh), and [`tools/export_results.py`](../tools/export_results.py). Nine `flash_10` runs are under `results/`. |
 | Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |
 | Team-size experiment with 3 and 4 agents (later) | | `coop` and `team` already start one agent per feature (`-f 1,2,3` runs 3 agents), and `team3_250` / `team3_all` list three-feature groups. Blocker: the grader only checks two features (the local path uses the first two; the batch path crashes on three). Extend it to merge all patches and require every feature's tests to pass. |
+| Send the submit-reminder crash fix upstream | | Fixed in our fork (see [harness_limits.md](harness_limits.md)). Rebase the fix onto the latest upstream commit and open a pull request on `cooperbench/CooperBench`. |
 | Confirm `HIGH` thinking with the team | | Our status report left the thinking setting open. Share [model_config.md](model_config.md). |
 
 ## Done
