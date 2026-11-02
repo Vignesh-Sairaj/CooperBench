@@ -55,9 +55,13 @@ class MessagingConnector:
 
         self._client = redis.from_url(url)
         self._inbox_key = f"{self._prefix}{agent_id}:inbox"
+        self._seq_key = f"{self._prefix}msg_seq"
         self._seen_alive: set[str] = set()
+        self.last_sent_message: dict[str, Any] | None = None
 
         # Clear stale messages from previous runs
+        if agents and agent_id == agents[0] and not any(self._client.llen(f"{self._prefix}{p}:inbox") for p in agents):
+            self._client.delete(self._seq_key)
         self._client.delete(self._inbox_key)
         self._client.delete(self._exited_key(agent_id))
         self.heartbeat()
@@ -145,12 +149,25 @@ class MessagingConnector:
         """
         pass
 
-    def send(self, recipient: str, content: str) -> bool:
+    def send(
+        self,
+        recipient: str,
+        content: str,
+        *,
+        assign_id: bool = False,
+        reply_to: str | None = None,
+        resolve: bool = False,
+        intent: str | None = None,
+    ) -> bool:
         """Send a message to another agent's inbox.
 
         Args:
             recipient: Target agent's ID
             content: Message content
+            assign_id: Allocate a monotonic run-scoped message ID (m1, m2, ...)
+            reply_to: Optional parent message/thread ID being replied to
+            resolve: Whether this reply explicitly marks the thread resolved
+            intent: Optional canonical intent tag (Proposal, Request, Response, ACK, FYI)
 
         Returns:
             ``True`` if the message was queued, ``False`` if the recipient has already
@@ -159,12 +176,21 @@ class MessagingConnector:
         """
         if self.has_exited(recipient):
             return False
-        message = {
+        message: dict[str, Any] = {
             "from": self.agent_id,
             "to": recipient,
             "content": content,
             "timestamp": datetime.now().isoformat(),
         }
+        if assign_id:
+            message["id"] = f"m{int(self._client.incr(self._seq_key))}"
+        if reply_to:
+            message["reply_to"] = reply_to
+        if resolve:
+            message["resolve"] = True
+        if intent:
+            message["intent"] = intent
+        self.last_sent_message = message
         self._client.rpush(f"{self._prefix}{recipient}:inbox", json.dumps(message))
         return True
 
@@ -182,14 +208,31 @@ class MessagingConnector:
             messages.append(json.loads(msg))
         return messages
 
-    def send_and_wait(self, recipient: str, content: str, timeout: int = 60) -> tuple[bool, list[dict]]:
+    def send_and_wait(
+        self,
+        recipient: str,
+        content: str,
+        timeout: int = 60,
+        *,
+        assign_id: bool = False,
+        reply_to: str | None = None,
+        resolve: bool = False,
+        intent: str | None = None,
+    ) -> tuple[bool, list[dict]]:
         """Send, then block until the recipient replies, they exit, or ``timeout``.
 
         Returns ``(delivered, replies)``.  ``delivered`` is False when the recipient had
         already finished before the send.  The wait also ends the moment the recipient
         exits, so an agent never burns the full timeout on a reply that cannot arrive.
         """
-        if not self.send(recipient, content):
+        if not self.send(
+            recipient,
+            content,
+            assign_id=assign_id,
+            reply_to=reply_to,
+            resolve=resolve,
+            intent=intent,
+        ):
             return False, []
 
         # Publish that we are blocked on this recipient, so their delivery can say so. A peer

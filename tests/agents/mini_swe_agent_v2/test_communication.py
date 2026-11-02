@@ -21,6 +21,7 @@ from typing import Any
 import pytest
 import yaml
 
+from cooperbench.agents.mini_swe_agent_v2.agents.communication import COMPACTION_BOARD_HEADING
 from cooperbench.agents.mini_swe_agent_v2.agents.default import DefaultAgent
 from cooperbench.agents.mini_swe_agent_v2.config import get_config_path
 from cooperbench.agents.mini_swe_agent_v2.connectors import MessagingConnector
@@ -304,5 +305,92 @@ class TestDeliveryTiming:
         assert alice._comm_coord.has_held_messages is False
         assert any("changed signature of helper()" in m.get("content", "") for m in alice.messages)
         assert all(m["role"] != "exit" for m in alice.messages)
+
+
+class TestMessageThreading:
+    def test_monotonic_ids_open_vs_resolved_and_wire_validation(
+        self, comm_pair: tuple[MessagingConnector, MessagingConnector]
+    ) -> None:
+        alice_comm, bob_comm = comm_pair
+        alice = _make_agent("agent1", alice_comm, message_threading=True, step_limit=100, step_counter=True)
+        bob = _make_agent("agent2", bob_comm, message_threading=True, step_limit=100, step_counter=True)
+
+        # 1. Validation failures: --resolve without --reply-to, and unknown --reply-to ID
+        err1 = alice.execute_actions(_turn('send_message --resolve agent2 "settled"'))
+        assert "--resolve requires --reply-to" in err1[-1]["content"]
+        err2 = alice.execute_actions(_turn('send_message --reply-to m99 agent2 "unknown"'))
+        assert "unknown --reply-to id 'm99'" in err2[-1]["content"]
+        assert bob_comm.peek() == 0
+
+        # 2. Alice opens thread m1 (with nested quotes inside single-quoted body)
+        alice.n_calls = 1
+        out1 = alice.execute_actions(_turn("""send_message agent2 'Taking "cli.py" — you take parser.py?'"""))
+        assert "Message sent to agent2 (id: m1)" in out1[-1]["content"]
+        assert "[Open threads (1):" in out1[-1]["content"]
+        assert "[Step 1 of 100: 99 left." in out1[-1]["content"]
+
+        # 3. Bob receives m1, replies with --reply-to m1 (NO --resolve) -> m2, thread m1 stays OPEN
+        bob.model.queue_turn('send_message --reply-to m1 agent1 "What about shared types in models.py?"')
+        bob.step()
+        assert "Message sent to agent1 (id: m2, thread m1: open)" in bob.messages[-1]["content"]
+        assert "[Open threads (1):" in bob.messages[-1]["content"]
+
+        # 4. Alice receives m2 and replies with --reply-to m2 --resolve -> m3 resolves root thread m1!
+        alice.model.queue_turn('send_message --reply-to m2 --resolve agent2 "Put shared types at bottom of models.py"')
+        alice.step()
+        assert "Message sent to agent2 (id: m3, thread m1: resolved)" in alice.messages[-1]["content"]
+        assert "[Open threads" not in alice.messages[-1]["content"]
+
+        # 5. Bob receives m3 -> Bob's thread m1 transitions to resolved and leaves the turn footer
+        bob.model.queue_turn("ls")
+        bob.step()
+        assert "[Open threads" not in bob.messages[-1]["content"]
+        assert bob._comm_coord._threads["m1"].status == "resolved"
+
+        # 6. Undelivered send to exited peer does not advance msg_seq
+        bob_comm.mark_exited(published=True)
+        fail_send = alice.execute_actions(_turn('send_message agent2 "after exit"'))
+        assert "completed their work and exited" in fail_send[-1]["content"]
+        assert int(alice_comm._client.get(alice_comm._seq_key) or 0) == 3
+
+    def test_compaction_pins_open_and_resolved_threads_and_strips_old_board(
+        self, comm_pair: tuple[MessagingConnector, MessagingConnector]
+    ) -> None:
+        alice_comm, bob_comm = comm_pair
+        model = _StubModel()
+        alice = _make_agent(
+            "agent1",
+            alice_comm,
+            model=model,
+            message_threading=True,
+            compaction_enabled=True,
+            compaction_token_trigger=1000,
+            compaction_keep_recent_turns=1,
+        )
+
+        # Open m1 and resolve it via m2; open m3 and leave it open
+        alice.execute_actions(_turn('send_message agent2 "Split cli.py vs parser.py"'))
+        bob_comm.send("agent1", "Agreed on split", assign_id=True, reply_to="m1", resolve=True)
+        bob_comm.send("agent1", "Can you export parse_flag()?", assign_id=True)
+        alice.model.queue_turn("ls", prompt_tokens=1500)
+        alice.step()
+        alice.model.queue_turn("pwd", prompt_tokens=500)
+        alice.step()  # triggers compaction #1 before query!
+
+        assert alice._compaction_count == 1
+        summary_msg = alice.messages[2]
+        assert COMPACTION_BOARD_HEADING in summary_msg["content"]
+        assert "Open threads (require follow-up or --resolve):" in summary_msg["content"]
+        assert "m3" in summary_msg["content"]
+        assert "Resolved agreements (keep honoring these boundaries):" in summary_msg["content"]
+        assert "m1" in summary_msg["content"]
+
+        # Trigger compaction #2 and verify summarizer_input had prior board stripped
+        alice._last_prompt_tokens = 1500
+        alice.model.queue_turn("ls", prompt_tokens=500)
+        alice.step()
+        assert alice._compaction_count == 2
+        second_summarizer_input = model.summarizer_inputs[-1]
+        assert all(COMPACTION_BOARD_HEADING not in (m.get("content") or "") for m in second_summarizer_input)
 
 
