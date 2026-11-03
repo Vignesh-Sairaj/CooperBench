@@ -80,7 +80,7 @@ Repeats [`coop --git` at `medium` thinking with 64K compaction](../coop-msa_v2-g
 ## Observations
 
 - 34/50 (68%) at 64K vs. 35/50 at 128K on Vertex AI. Pair by pair, 1 pair passed only here (`pillow_task/290` (3,5)) and 2 only at 128K (`pallets_click_task/2068` (5,11), `samuelcolvin_dirty_equals_task/43` (3,7)), so the larger window made no real difference for `coop --git`.
-- The same setup scored 38/50 on AI Studio. Five pairs passed only there and one only here. This is within the 4 to 6 pair run-to-run variation seen elsewhere on these pairs, though both Vertex AI runs of `coop --git` at `medium` scored below the AI Studio run.
+- The same setup scored 38/50 on AI Studio. Five pairs passed only there and one only here. The two runs differ in provider, concurrency, and date as well as chance, and both Vertex AI runs of `coop --git` at `medium` scored below the AI Studio run.
 - Agents compacted a median of once per agent and took a median of 82.5 steps; all 50 pairs merged cleanly (46 clean, 4 identical branches). Cost `$96.50` (`$1.93` per pair).
 - Mostly overnight at 4 pairs at a time, the run logged only 4 retries, and 1 pair (`pillow_task/290` (2,3)) got a false notice that the partner agent had stopped.
 

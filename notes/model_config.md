@@ -33,7 +33,7 @@ The settings live in [`configs/reference/medium.yaml`](../configs/reference/medi
 | `team` | `tools/run.sh team flash 4` | `team-msa_v2-gemini-3-8-flash-flash-ref` |
 | `coop --git` at `low` thinking | `AGENT_CONFIG=configs/reference/low.yaml RUN_SUFFIX=ref-low tools/run.sh coop flash 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash-ref-low` |
 
-Use `flash_10` (10 pairs) to check that a new feature works at all, and `flash` (50 pairs) or `core` (10 harder pairs) for results. Two runs of the same setup on `flash` differ by about 4 to 6 pairs, so compare arms pair by pair and repeat runs before calling a difference real.
+Use `flash_10` (10 pairs) to check that a new feature works at all, and `flash` (50 pairs) or `core` (10 harder pairs) for results. Results move between runs: when the same config was rerun on a different provider, 4 to 6 of the 50 pairs changed outcome, so compare arms pair by pair and repeat runs before calling a difference real.
 
 ## Changing the Setup
 

@@ -80,7 +80,7 @@ Repeats [`solo-msa_v2-gemini-3-8-flash-flash-saturation-low`](../solo-msa_v2-gem
 ## Observations
 
 - 32/50 (64%) on Vertex AI vs. 36/50 (72%) for the same setup on AI Studio. Pair by pair, 31 passed in both, 13 failed in both, 5 passed only on AI Studio (`pallets_click_task/2956` (1,8), `pallets_jinja_task/1559` (1,8), `pallets_jinja_task/1621` (4,5) and (4,10), `pillow_task/290` (3,5)), and 1 passed only on Vertex AI (`dspy_task/8394` (3,5)).
-- `solo` makes the same model calls on either provider, and retries only add waiting time, so this 4-pair gap is a measure of ordinary run-to-run variation on 50 pairs. Differences of about 4 to 6 pairs between two single runs on this subset should not be read as real effects without repeats or a paired test.
+- This run differs from the AI Studio run in provider, concurrency, and date, not only chance, so the 4-pair gap is an upper estimate of run-to-run variation. Differences of this size between single runs on this subset should not be read as real effects without repeats or a paired test.
 - 31 pairs passed in all three `solo` `low` runs (this run, the AI Studio run, and the AI Studio run without the step counter), and 38 of 50 passed in at least one `solo` run at any thinking level.
 - Step use matched the AI Studio run (median 74 steps per pair, one agent at the 500-step limit). Cost was `$33.47` vs. `$25.70`, and the run took 180 minutes at 10 pairs at a time, with 14 rate-limit and 11 server-busy retries.
 

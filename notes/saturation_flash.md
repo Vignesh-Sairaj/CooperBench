@@ -68,7 +68,7 @@ Compaction is when the harness summarizes older turns to keep each request small
 | `coop --git`, `medium` | 34/50 (Vertex AI) | 35/50 | 1 / 2 | 1 / 0 |
 | `coop --git`, `low` | 30/50 and 30/50 | 34/50 | 1 / 5 and 2 / 6 | 0 / 0 |
 
-**There is no consistent accuracy difference:** two comparisons went up at 128K, one stayed flat, and one went down, each within the 4 to 6 pair run-to-run variation. Cost was about the same overall (cheaper for `solo` at `medium`, slightly more for `coop --git` at `low`). What 128K does change is how often agents compact at `medium` thinking, where conversations get long. The 64K `solo` runs used AI Studio and the 128K runs Vertex AI, which matters little for `solo` because it has no partner to fall out of sync with. The reference setting is 128K: accuracy does not decide it, and fewer summaries keep results less dependent on what each summary preserved, closer to how real coding agents work.
+**There is no consistent accuracy difference:** two comparisons went up at 128K, one stayed flat, and one went down, each about the size of the differences seen when a config was rerun. Cost was about the same overall (cheaper for `solo` at `medium`, slightly more for `coop --git` at `low`). What 128K does change is how often agents compact at `medium` thinking, where conversations get long. The 64K `solo` runs used AI Studio and the 128K runs Vertex AI, which matters little for `solo` because it has no partner to fall out of sync with. The reference setting is 128K: accuracy does not decide it, and fewer summaries keep results less dependent on what each summary preserved, closer to how real coding agents work.
 
 ## Reference Settings: `solo` vs. `coop --git`
 
@@ -79,7 +79,7 @@ With the frozen reference settings (Vertex AI, 500 steps, 128K compaction, step 
 | `low` | 30/50 | 34/50 | 1 / 5 |
 | `medium` (default) | 37/50 | 35/50 | 3 / 1 |
 
-`medium` clearly helps `solo` (7 pairs gained, none lost vs. `low`) but barely changes `coop --git` (35 vs. 34). Which setting wins flips with thinking level, and each gap is within the 4 to 6 pair run-to-run variation, so with these settings one agent and two agents are roughly level on these 50 pairs.
+`medium` clearly helps `solo` (7 pairs gained, none lost vs. `low`) but barely changes `coop --git` (35 vs. 34). Which setting wins flips with thinking level, and each gap is about the size of the differences seen when a config was rerun, so with these settings one agent and two agents are roughly level on these 50 pairs.
 
 ## Messaging Only vs. Shared Git at `low` Thinking
 
@@ -106,7 +106,7 @@ Turning the step counter off in `solo` at `low` thinking (everything else identi
 
 ## Run-to-Run Variation
 
-The same `solo` `low` setup scored 36/50 on AI Studio and 32/50 on Vertex AI. `solo` makes the same model calls on either provider, so the gap is ordinary variation: 31 pairs passed in both runs, 5 only on AI Studio, and 1 only on Vertex AI. Single-run differences of about 4 to 6 pairs on these 50 pairs, including the 6-pair gap between `solo` and `coop --git` at `low` thinking, need repeated runs or paired tests before they count as effects.
+No setup has yet been repeated with exactly the same settings on 50 pairs. The closest are three configs rerun on a different provider (AI Studio vs. Vertex AI), also with different concurrency and on a different day: `solo` `low` scored 36/50 and 32/50 (6 pairs changed outcome), `coop --git` `low` 30/50 and 30/50 (4 changed), and `coop --git` `medium` 38/50 and 34/50 (6 changed). So roughly 1 in 10 pairs flips between runs, and total scores moved by 0 to 4 pairs. Part of that may come from the provider or concurrency rather than chance alone, so single-run differences of this size are not evidence of an effect. A same-settings repeat would pin down the chance-only part.
 
 The `coop --git` `low` setup was also repeated on Vertex AI and scored 30/50 both times (28 pairs passed in both). Averaged over two runs each, `solo` scores about 34/50 and `coop --git` 30/50, so the coordination gap at `low` thinking is about 4 pairs rather than 6. Five `solo`-solvable pairs failed in both `coop --git` runs, including both `pallets_click_task/2068` pairs where agents work around a line both features need.
 
