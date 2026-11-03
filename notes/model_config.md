@@ -12,12 +12,14 @@ Every run uses the same model setup, so differences in results come from the coo
 | Provider | Vertex AI, location `global` | Higher rate limits than AI Studio at the same price, and quota is per GCP project, so several projects can run in parallel. |
 | Thinking | `medium` (sweeps also run `low`) | `coop --git` scored best at `medium` (38/50 vs. 30/50 at `low` and 34/50 at `high`). `solo` changes little with thinking level (32 to 37). Google's own default for this model is also `medium`. |
 | Step limit | 500 per agent | A ceiling, not a target: the median agent uses 75 to 135 steps. A 300-step limit would have failed 1 to 7 `solo` passes and no `coop` passes, which would tilt the comparison toward `coop`. |
-| Compaction | at 128K tokens | Upstream's 28K was sized for small open models. At 128K, `solo` at `medium` rose from 33/50 to 37/50 and got cheaper (median compactions per agent 5 to 1); `coop --git` was unchanged (31 vs. 30 on 45 matched pairs). |
+| Compaction | at 128K tokens (a soft trigger, not a hard window) | Upstream's 28K was sized for small open models, and real coding agents compact much later. Against 64K, accuracy showed no consistent difference (four comparisons, all within run-to-run variation; see [saturation_flash.md](saturation_flash.md#64k-vs-128k-compaction)), cost was about the same, and agents compacted far less (at `medium`, median compactions per agent fell from 5 to 1 for `solo`). Fewer summaries means less of the run depends on what the summary kept. |
 | Step counter | On | Shows "Step n of 500: k left" every turn. At 100 steps it was the largest single improvement we measured (`solo` from 0 to 1 of 10 pairs to 7 of 10), and it costs nothing. |
 | Cost cap | `$40` per agent | Never reached so far; only a safety net against runaway agents. |
 | Container lifetime | 10 hours | Upstream containers stop after 2 hours, too short for long runs. |
 | Concurrency | Per Vertex AI project: `solo` `-c 8`, `coop` and `team` `-c 4`, at any hour | Keeps runs below the rate limits that make one agent stall while its partner waits; see [Concurrency](#concurrency). |
 | Harness and code | `-a mini_swe_agent_v2 --backend docker`; `main` of our fork with every intervention flag off | Upstream harness at `63b9d44` plus opt-in flags only. |
+
+**Compaction is a soft trigger.** After each model call, the harness checks the size of the request it just sent; only once a request reaches the threshold does it summarize older turns before the next call. The crossing request is sent in full, and a command that prints a lot can push one request well past the threshold: at 128K, the largest single request in the reference runs was about 260K tokens. Gemini 3.8 Flash accepts up to 1M tokens, so this never fails, but it raises token use per minute (see [harness_limits.md](harness_limits.md)).
 
 The settings live in [`configs/reference/medium.yaml`](../configs/reference/medium.yaml). [`low.yaml`](../configs/reference/low.yaml) and [`high.yaml`](../configs/reference/high.yaml) are identical except for the thinking level and are used only for thinking sweeps.
 

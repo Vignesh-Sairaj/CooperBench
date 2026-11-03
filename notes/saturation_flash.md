@@ -42,6 +42,19 @@ At `medium` thinking (Google's default for this model), `coop --git` scored **38
 
 **Raising compaction from 64K to 128K helped `solo` at `medium`:** 37/50 vs. 33/50 (4 pairs gained, none lost; p = 0.125), with median compactions per agent down from 5 to 1, median steps down from 133 to 74, no agent at the step limit, and lower cost (`$65.46` vs. `$82.07`). That brings `solo` within one pair of `coop --git` at 64K (38/50). For `coop --git` at `medium`, 128K on Vertex AI scored 35/50 vs. 38/50 at 64K on AI Studio, but the matching 64K run on Vertex AI scored 34/50 (1 pair only at 64K, 2 only at 128K), so the window size made no real difference for two agents. It removed most compactions (median 0 vs. 2) but cost more (`$94.60` vs. `$81.68`). At 128K, `solo` (37/50) and `coop --git` (35/50) are within run-to-run variation of each other.
 
+## 64K vs. 128K Compaction
+
+Compaction is when the harness summarizes older turns to keep each request small. It triggers once a request reaches the threshold, so it is a soft limit: the crossing request is sent in full, and single requests reached about 185K tokens at 64K and 260K at 128K. Four comparisons at 500 steps, all on the 50-pair `flash` subset:
+
+| Setting and thinking | 64K | 128K | Pairs only at 64K / only at 128K | Median compactions per agent (64K / 128K) |
+| :--- | :---: | :---: | :---: | :---: |
+| `solo`, `medium` | 33/50 | 37/50 | 0 / 4 | 5 / 1 |
+| `solo`, `low` | 36/50 and 32/50 | 30/50 | 6 / 0 and 3 / 1 | 0 / 0 |
+| `coop --git`, `medium` | 34/50 (Vertex AI) | 35/50 | 1 / 2 | 1 / 0 |
+| `coop --git`, `low` | 30/50 and 30/50 | 34/50 | 1 / 5 and 2 / 6 | 0 / 0 |
+
+**There is no consistent accuracy difference:** two comparisons went up at 128K, one stayed flat, and one went down, each within the 4 to 6 pair run-to-run variation. Cost was about the same overall (cheaper for `solo` at `medium`, slightly more for `coop --git` at `low`). What 128K does change is how often agents compact at `medium` thinking, where conversations get long. The 64K `solo` runs used AI Studio and the 128K runs Vertex AI, which matters little for `solo` because it has no partner to fall out of sync with. The reference setting is 128K: accuracy does not decide it, and fewer summaries keep results less dependent on what each summary preserved, closer to how real coding agents work.
+
 ## Reference Settings: `solo` vs. `coop --git`
 
 With the frozen reference settings (Vertex AI, 500 steps, 128K compaction, step counter):
