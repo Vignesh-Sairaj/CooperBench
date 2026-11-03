@@ -73,6 +73,7 @@ How to read the table:
 | [`coop-...-git-...-flash-saturation-medium-vertex`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium-vertex/summary.md) | `coop --git` | 3.8 Flash, medium (Vertex AI) | `flash` | 500 | 64K | Step counter; `$40` cap | Same-provider 64K control for the 128K run (35/50) | 34/50 | `$96.50` |
 | [`solo-...-flash-ref-low`](../results/solo-msa_v2-gemini-3-8-flash-flash-ref-low/summary.md) | `solo` | 3.8 Flash, low (Vertex AI) | `flash` | 500 | 128K | Reference settings at `low` thinking | `low` row of the thinking sweep (vs. 37/50 at `medium`) | 30/50 | `$36.81` |
 | [`coop-...-git-...-flash-ref-low`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-ref-low/summary.md) | `coop --git` | 3.8 Flash, low (Vertex AI) | `flash` | 500 | 128K | Reference settings at `low` thinking | `low` row of the thinking sweep (vs. 35/50 at `medium`) | 34/50 | `$48.96` |
+| [`solo-...-core-ref`](../results/solo-msa_v2-gemini-3-8-flash-core-ref/summary.md) | `solo` | 3.8 Flash, medium (Vertex AI) | `core` | 500 | 128K | Reference settings | `solo` on harder same-function pairs with enough budget | 6/10 | `$14.02` |
 | [`coop-...-flash-saturation-low`](../results/coop-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `coop` | 3.8 Flash, low | `flash` | 500 | 64K | Step counter; `$40` cap; messaging only | What does the shared git remote add (`coop --git` 30/50)? | 32/50 | `$49.49` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
