@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-git-gemini-3-8-flash-flash-ref-low",
+  "setting": "coop",
+  "git_enabled": true,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "vertex_ai/gemini-3.8-flash",
+  "subset": "flash",
+  "concurrency": 4,
+  "key_slot": 2,
+  "command": "cooperbench run -n coop-msa_v2-git-gemini-3-8-flash-flash-ref-low -s flash -a mini_swe_agent_v2 -m vertex_ai/gemini-3.8-flash --agent-config configs/reference/low.yaml --setting coop -c 4 --backend docker --git",
+  "git_commit": "6eba10df968d7263b35de45c77650005dbbefac3",
+  "git_dirty": false,
+  "agent_config_path": "configs/reference/low.yaml",
+  "agent_config": "# Reference agent config, thinking level: low. Frozen on 2026-11-02: do not edit.\n# Every run whose results are compared uses one of configs/reference/{low,medium,high}.yaml;\n# they differ only in thinkingLevel. medium is the default (tools/run.sh uses it).\n# Settings: 500 steps per agent, compaction at 128K tokens, per-turn step counter,\n# $40 per-agent cost cap, containers kept alive for 10 hours.\n# Reasons and evidence: notes/model_config.md#reference-setup.\n# For an intervention, copy this file to configs/variants/ and add only its flag.\nagent:\n  cost_limit: 40.0\n  step_limit: 500\n  compaction_token_trigger: 128000\n  step_counter: true\n\nenvironment:\n  container_timeout: \"10h\"\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 500,
+    "compaction_token_trigger": 128000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-03T02:11:21.106925",
+  "completed_at": "2026-11-03T05:01:17.930199",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-git-gemini-3-8-flash-flash-ref-low",
+  "headline": {
+    "pairs": 50,
+    "passed": 34,
+    "pass_rate": 0.68,
+    "merge_conflicts": 0,
+    "agents_at_step_limit": 0,
+    "agents_errored": 1,
+    "cost_usd": 48.9591,
+    "cost_per_pair_usd": 0.9792,
+    "wall_minutes": 169.9
+  },
+  "load": {
+    "peak_input_tokens_per_min": 4455714,
+    "median_input_tokens_per_min": 1506359,
+    "peak_calls_per_min": 122,
+    "total_retries": 2,
+    "rate_limit_retries": 2,
+    "server_busy_retries": 0
+  }
+}

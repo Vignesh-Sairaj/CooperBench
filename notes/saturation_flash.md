@@ -26,6 +26,7 @@ Every run below uses `gemini-3.8-flash` on the 50-pair `flash` subset, a 500-ste
 | [`coop --git`, 128K compaction (Vertex AI)](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium-128k-vertex/summary.md) | `medium` | **35/50 (70%)** | 0/100 | 0/50 | 74.5 | 0 | `$94.60` | 317 min |
 | [`coop --git`, 64K (Vertex AI)](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium-vertex/summary.md) | `medium` | **34/50 (68%)** | 0/100 | 0/50 | 82.5 | 1 | `$96.50` | 578 min |
 | [`solo`, reference settings at `low` (128K, Vertex AI)](../results/solo-msa_v2-gemini-3-8-flash-flash-ref-low/summary.md) | `low` | **30/50 (60%)** | 1/50 | n/a | 83.5 | 0 | `$36.81` | 84 min |
+| [`coop --git`, reference settings at `low` (128K, Vertex AI)](../results/coop-msa_v2-git-gemini-3-8-flash-flash-ref-low/summary.md) | `low` | **34/50 (68%)** | 0/100 | 0/50 | 79 | 0 | `$48.96` | 170 min |
 | [`team`](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **22/50 (44%)** | 0/100 | 30/50 | 74.5 | 0 | `$35.10` | 433 min |
 | [`solo`, no step counter](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 84 | 0 | `$25.64` | 309 min |
 | [`solo`, repeat on Vertex AI](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 74 | 0 | `$33.47` | 180 min |
@@ -40,6 +41,17 @@ At `medium` thinking (Google's default for this model), `coop --git` scored **38
 `solo` at `medium` scored **33/50**, so thinking level barely moves `solo` (36 and 32 at `low`, 33 at `medium`, 34 at `high`). Against it, `coop --git` at `medium` passed 5 pairs that `solo` missed and missed none that `solo` passed (exact two-sided test, p = 0.06), at the same cost (`$81.68` vs. `$82.07`). At `medium` thinking, two agents beat one on these pairs, reversing the result at `low`.
 
 **Raising compaction from 64K to 128K helped `solo` at `medium`:** 37/50 vs. 33/50 (4 pairs gained, none lost; p = 0.125), with median compactions per agent down from 5 to 1, median steps down from 133 to 74, no agent at the step limit, and lower cost (`$65.46` vs. `$82.07`). That brings `solo` within one pair of `coop --git` at 64K (38/50). For `coop --git` at `medium`, 128K on Vertex AI scored 35/50 vs. 38/50 at 64K on AI Studio, but the matching 64K run on Vertex AI scored 34/50 (1 pair only at 64K, 2 only at 128K), so the window size made no real difference for two agents. It removed most compactions (median 0 vs. 2) but cost more (`$94.60` vs. `$81.68`). At 128K, `solo` (37/50) and `coop --git` (35/50) are within run-to-run variation of each other.
+
+## Reference Settings: `solo` vs. `coop --git`
+
+With the frozen reference settings (Vertex AI, 500 steps, 128K compaction, step counter):
+
+| Thinking | `solo` | `coop --git` | Pairs only in `solo` / only in `coop --git` |
+| :--- | :---: | :---: | :---: |
+| `low` | 30/50 | 34/50 | 1 / 5 |
+| `medium` (default) | 37/50 | 35/50 | 3 / 1 |
+
+`medium` clearly helps `solo` (7 pairs gained, none lost vs. `low`) but barely changes `coop --git` (35 vs. 34). Which setting wins flips with thinking level, and each gap is within the 4 to 6 pair run-to-run variation, so with these settings one agent and two agents are roughly level on these 50 pairs.
 
 ## Messaging Only vs. Shared Git at `low` Thinking
 
