@@ -34,7 +34,7 @@ Runs on unmodified upstream code (`63b9d44`, no agent config, so each model's de
 - **`gemini-3-flash-preview`:** more thinking did not help. At `high` it reasoned about 4,500 tokens per call (none at `minimal` or `low`), took 117 minutes instead of 12, and cost about 9 times as much, for 5/10 instead of 7/10.
 - **`gemini-3.8-flash`, `low` vs. `high` (`solo`):** at `low`, 4 of 10 agents hit the step limit and agents compacted 1.7 times each; at `high`, 9 to 10 of 10 hit the limit and compacted 8 to 9 times each.
 - **Merge conflicts depend on the model:** `gemini-3-flash-preview` agents produced conflicting patches on 3 to 4 of 10 pairs in every `coop` run; `gemini-3.8-flash` agents on 0 to 1.
-- **Caveat:** at `minimal` and `low`, both models answer fast enough to hit the API rate limit even with 6 agents (60 to 105 retries per `coop` run). A slowed agent can make its partner give up waiting, so these `coop` scores are slightly less reliable. See [model_config.md](model_config.md#concurrency) for agents per key by model and thinking level.
+- **Caveat:** at `minimal` and `low`, both models answer fast enough to hit the API rate limit even with 6 agents (60 to 105 retries per `coop` run). A slowed agent can make its partner give up waiting, so these `coop` scores are slightly less reliable. See [model_config.md](concurrency.md) for agents per key by model and thinking level.
 
 ## Step Counter
 

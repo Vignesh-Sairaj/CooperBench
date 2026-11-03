@@ -42,6 +42,21 @@ At `medium` thinking (Google's default for this model), `coop --git` scored **38
 
 **Raising compaction from 64K to 128K helped `solo` at `medium`:** 37/50 vs. 33/50 (4 pairs gained, none lost; p = 0.125), with median compactions per agent down from 5 to 1, median steps down from 133 to 74, no agent at the step limit, and lower cost (`$65.46` vs. `$82.07`). That brings `solo` within one pair of `coop --git` at 64K (38/50). For `coop --git` at `medium`, 128K on Vertex AI scored 35/50 vs. 38/50 at 64K on AI Studio, but the matching 64K run on Vertex AI scored 34/50 (1 pair only at 64K, 2 only at 128K), so the window size made no real difference for two agents. It removed most compactions (median 0 vs. 2) but cost more (`$94.60` vs. `$81.68`). At 128K, `solo` (37/50) and `coop --git` (35/50) are within run-to-run variation of each other.
 
+## Choosing the Thinking Level
+
+Results on the 50-pair `flash` subset at 500 steps. The reference settings (128K, Vertex AI) were run at `low` and `medium`; `high` was run only in the earlier 64K runs.
+
+| Thinking | `solo`, reference | `coop --git`, reference | `solo`, 64K | `coop --git`, 64K | Cost per 50 pairs, reference (`solo` / `coop --git`) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `low` | 30/50 | 34/50 | 36/50 and 32/50 | 30/50 and 30/50 | `$37` / `$49` |
+| `medium` | **37/50** | **35/50** | 33/50 | 38/50, 34/50 | `$65` / `$95` |
+| `high` | not run | not run | 34/50 | 34/50 | (`$110` / `$96` at 64K) |
+
+- **`low` would bias the comparison toward `coop`.** With the reference settings, `solo` lost 7 pairs at `low` and gained none (p = 0.016), while `coop --git` barely moved (34 vs. 35). A single agent carrying both features needs the extra reasoning more than two agents with one feature each.
+- **`high` adds cost without adding passes.** At 64K, `high` never beat `medium` (`solo` 34 vs. 33, `coop --git` 34 vs. 38), and `solo` at `high` was the most expensive run on these pairs (`$110`), with agents taking twice as many steps.
+- **It is the model's own default.** Google's default for `gemini-3.8-flash` is `medium`. The config still sets it explicitly, because without a setting LiteLLM sends `low` on some providers ([harness_limits.md](harness_limits.md#thinking-level-must-be-set-explicitly)).
+- **Trade-off:** `medium` costs about twice as much as `low`. Sweeps report `low` as a second column, and `low` is fine for quick checks that a new feature works at all.
+
 ## 64K vs. 128K Compaction
 
 Compaction is when the harness summarizes older turns to keep each request small. It triggers once a request reaches the threshold, so it is a soft limit: the crossing request is sent in full, and single requests reached about 185K tokens at 64K and 260K at 128K. Four comparisons at 500 steps, all on the 50-pair `flash` subset:

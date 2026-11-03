@@ -7,7 +7,8 @@ A map of the notes in this folder.
 | Note | What it covers |
 | :--- | :--- |
 | [workflow.md](workflow.md) | Start here: setup, running a benchmark (including parallel runs), exporting and archiving results. |
-| [model_config.md](model_config.md) | The model setup every run uses, and how many agents to run per API key. |
+| [model_config.md](model_config.md) | The frozen reference settings every run uses, and how to run them. Kept short. |
+| [concurrency.md](concurrency.md) | How many pairs to run at once per GCP project, rate limits, and why `coop` stays low. |
 | [harness_limits.md](harness_limits.md) | How the harness's step limit, compaction, and grading differ from real coding agents, and harness bugs we hit. |
 | [logs_archive.md](logs_archive.md) | Where raw run logs are stored and how to upload or download them. |
 | [results_format.md](results_format.md) | Run naming and the files in `results/<run_name>/`. |

@@ -68,7 +68,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    tools/pull_images.sh flash_10
    ```
 
-2. **Run** with the [reference setup](model_config.md#reference-setup). First load `.env` (`set -a; source .env; set +a`). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model (`vertex_ai/gemini-3.8-flash`), the reference agent config, and backend, and names the run with a `-ref` suffix. Run 8 pairs at once for `solo` and 4 for `coop` and `team` on each Vertex AI project ([model_config.md](model_config.md#reference-concurrency-per-vertex-ai-project)); if using AI Studio (`MODEL=gemini/...`), follow the per-key table in [model_config.md](model_config.md#recommended--c-per-api-key):
+2. **Run** with the [reference setup](model_config.md#reference-setup). First load `.env` (`set -a; source .env; set +a`). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model (`vertex_ai/gemini-3.8-flash`), the reference agent config, and backend, and names the run with a `-ref` suffix. Run 8 pairs at once for `solo` and 4 for `coop` and `team` on each Vertex AI project ([model_config.md](concurrency.md#reference-concurrency-vertex-ai)); if using AI Studio (`MODEL=gemini/...`), follow the per-key table in [model_config.md](concurrency.md#recommended--c-per-api-key):
 
    ```bash
    set -a; source .env; set +a
@@ -78,7 +78,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
 
    To try different budgets, pass a variant config and a name suffix, for example `RUN_SUFFIX=steps250-compact64k AGENT_CONFIG=configs/variants/steps250_compact64k.yaml tools/run.sh solo flash_10 10`. To use another model, set `MODEL`, for example `MODEL=vertex_ai/gemini-3-flash-preview AGENT_CONFIG=configs/variants/thinking_minimal.yaml RUN_SUFFIX=minimal tools/run.sh solo flash_10 10`.
 
-   Run one benchmark at a time per GCP project (see [Concurrency](model_config.md#concurrency)). Grading runs automatically at the end.
+   Run one benchmark at a time per GCP project (see [Concurrency](concurrency.md)). Grading runs automatically at the end.
 
    To run different experiments in parallel, give each run its own project slot with `KEY_SLOT` (each in its own terminal, after `set -a; source .env; set +a`). Each parallel run needs a distinct run name:
 
@@ -129,3 +129,23 @@ Rerunning with the same name skips pairs that already have results; add `--force
 
 4. **Index it:** add a row for the run in [runs.md](runs.md).
 5. **Commit and push** `results/<run_name>/` and `notes/runs.md`, after the checks in `AGENTS.md`.
+
+## Running a Single Pair by Hand
+
+For whole subsets, use `tools/run.sh` (above). To try one pair directly, pre-pull its task image and always pass the config file. Leave out `-n` so the CLI names the run after its setting, model, and task:
+
+```bash
+docker pull akhatua/cooperbench-dottxt-ai-outlines:task1371
+
+VERTEXAI_PROJECT=<your-gcp-project> VERTEXAI_LOCATION=global \
+uv run --frozen cooperbench run \
+  -r dottxt_ai_outlines_task -t 1371 -f 1,2 \
+  -a mini_swe_agent_v2 \
+  -m vertex_ai/gemini-3.8-flash \
+  --agent-config configs/reference/medium.yaml \
+  --setting coop --git --backend docker
+```
+
+Use the same provider (`vertex_ai/`, `gemini/`, or `openrouter/`) for every run in a comparison: rate-limit pauses and endpoint latency shift relative turn pacing and message arrival order in `coop`. Always keep `VERTEXAI_LOCATION=global` for Vertex AI (regional endpoints add a `1.1x` cost multiplier in LiteLLM or return `404`). Note that `_generate_run_name` strips the provider prefix, so `vertex_ai/gemini-3.8-flash` and `gemini/gemini-3.8-flash` produce the same run folder name (`run.json` records the full `model` string).
+
+**Run names do not include the provider.** `vertex_ai/gemini-3.8-flash` and `gemini/gemini-3.8-flash` produce the same run name, and the runner skips every pair that already has a result in that folder. When repeating an AI Studio run on Vertex AI, add a suffix (for example `RUN_SUFFIX=saturation-low-vertex`) so it does not reuse the old folder.
