@@ -25,6 +25,7 @@ Every run below uses `gemini-3.8-flash` on the 50-pair `flash` subset, a 500-ste
 | [`coop`, messaging only](../results/coop-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **32/50 (64%)** | 0/100 | 3/50 | 106.5 | n/a | `$49.49` | 361 min |
 | [`coop --git`, 128K compaction (Vertex AI)](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium-128k-vertex/summary.md) | `medium` | **35/50 (70%)** | 0/100 | 0/50 | 74.5 | 0 | `$94.60` | 317 min |
 | [`coop --git`, 64K (Vertex AI)](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium-vertex/summary.md) | `medium` | **34/50 (68%)** | 0/100 | 0/50 | 82.5 | 1 | `$96.50` | 578 min |
+| [`solo`, reference settings at `low` (128K, Vertex AI)](../results/solo-msa_v2-gemini-3-8-flash-flash-ref-low/summary.md) | `low` | **30/50 (60%)** | 1/50 | n/a | 83.5 | 0 | `$36.81` | 84 min |
 | [`team`](../results/team-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `low` | **22/50 (44%)** | 0/100 | 30/50 | 74.5 | 0 | `$35.10` | 433 min |
 | [`solo`, no step counter](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-nostepcounter/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 84 | 0 | `$25.64` | 309 min |
 | [`solo`, repeat on Vertex AI](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `low` | **32/50 (64%)** | 1/50 | n/a | 74 | 0 | `$33.47` | 180 min |
