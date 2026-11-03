@@ -67,5 +67,6 @@ How to read the table:
 | [`solo-...-flash-saturation-low-vertex`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `solo` | 3.8 Flash, low (Vertex AI) | `flash` | 500 | 64K | Step counter; `$40` cap | Same setup on Vertex AI: run-to-run variation, reference for Vertex runs | 32/50 | `$33.47` |
 | [`coop-...-git-...-flash-saturation-low-vertex`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-low-vertex/summary.md) | `coop --git` | 3.8 Flash, low (Vertex AI) | `flash` | 500 | 64K | Step counter; `$40` cap | Repeat of `coop --git` `low` (30/50); reference for Vertex intervention arms | 30/50 | `$55.29` |
 | [`coop-...-git-...-flash-saturation-medium`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium/summary.md) | `coop --git` | 3.8 Flash, medium | `flash` | 500 | 64K | Step counter; `$40` cap | Which thinking level is best for two agents (30/50 `low`, 34/50 `high`)? | 38/50 | `$81.68` |
+| [`solo-...-flash-saturation-medium`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-medium/summary.md) | `solo` | 3.8 Flash, medium | `flash` | 500 | 64K | Step counter; `$40` cap | `solo` reference at `medium` (vs. `coop --git` 38/50) | 33/50 | `$82.07` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
