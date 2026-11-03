@@ -350,11 +350,7 @@ def compile_pair_replay(
     result_data = _load_json(pair_dir / "result.json") or {}
     eval_data = _load_json(pair_dir / "eval.json") or {}
     run_info = next((r for r in list_runs(ld, rd) if r["run_name"] == run_name), None)
-    config_flags = (
-        run_info["config_flags"]
-        if run_info
-        else _extract_config_flags({}, ld / run_name)
-    )
+    config_flags = run_info["config_flags"] if run_info else _extract_config_flags({}, ld / run_name)
 
     t1_path = _resolve_traj_file(pair_dir, "agent1", fa)
     t2_path = _resolve_traj_file(pair_dir, "agent2", fb)
@@ -504,17 +500,19 @@ def _load_run_pairs(run_name: str, logs_dir: Path, results_dir: Path) -> list[di
         with open(pairs_csv, encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                pairs.append({
-                    "repo": row["repo"],
-                    "task_id": int(row["task_id"]),
-                    "feature_a": int(row["feature_a"]),
-                    "feature_b": int(row["feature_b"]),
-                    "both_passed": row["both_passed"].lower() == "true",
-                    "merge_status": row.get("merge_status", "unknown"),
-                    "messages_sent": int(row.get("messages_sent") or 0),
-                    "steps_total": int(row.get("steps_total") or 0),
-                    "cost_usd": float(row.get("cost_usd") or 0.0),
-                })
+                pairs.append(
+                    {
+                        "repo": row["repo"],
+                        "task_id": int(row["task_id"]),
+                        "feature_a": int(row["feature_a"]),
+                        "feature_b": int(row["feature_b"]),
+                        "both_passed": row["both_passed"].lower() == "true",
+                        "merge_status": row.get("merge_status", "unknown"),
+                        "messages_sent": int(row.get("messages_sent") or 0),
+                        "steps_total": int(row.get("steps_total") or 0),
+                        "cost_usd": float(row.get("cost_usd") or 0.0),
+                    }
+                )
         return pairs
 
     run_log_dir = logs_dir / run_name
@@ -531,17 +529,19 @@ def _load_run_pairs(run_name: str, logs_dir: Path, results_dir: Path) -> list[di
         merge_info = ev.get("merge") or {}
         merge_status = merge_info.get("status") or ("clean" if both_passed else "unknown")
 
-        found_pairs.append({
-            "repo": res.get("repo", ""),
-            "task_id": int(res.get("task_id", 0)),
-            "feature_a": int(features[0]),
-            "feature_b": int(features[1]),
-            "both_passed": both_passed,
-            "merge_status": merge_status,
-            "messages_sent": int(res.get("messages_sent", 0)),
-            "steps_total": int(res.get("total_steps", 0)),
-            "cost_usd": float(res.get("total_cost", 0.0)),
-        })
+        found_pairs.append(
+            {
+                "repo": res.get("repo", ""),
+                "task_id": int(res.get("task_id", 0)),
+                "feature_a": int(features[0]),
+                "feature_b": int(features[1]),
+                "both_passed": both_passed,
+                "merge_status": merge_status,
+                "messages_sent": int(res.get("messages_sent", 0)),
+                "steps_total": int(res.get("total_steps", 0)),
+                "cost_usd": float(res.get("total_cost", 0.0)),
+            }
+        )
     return found_pairs
 
 
@@ -794,10 +794,7 @@ def _extract_touched_files(cmd: str) -> list[str]:
 
 def _extract_diff_snippet(cmd: str, output: str) -> str | None:
     if "diff" in cmd or output.startswith("diff --git") or "@@ -" in output:
-        diff_lines = [
-            line for line in output.splitlines()
-            if line.startswith(("+", "-", "@@", "diff --git", "index "))
-        ]
+        diff_lines = [line for line in output.splitlines() if line.startswith(("+", "-", "@@", "diff --git", "index "))]
         if diff_lines:
             return "\n".join(diff_lines[:150])
     return None
@@ -962,18 +959,20 @@ def _parse_send_calls(
         except Exception:
             pass
 
-        calls.append({
-            "id": mid,
-            "sender": sender,
-            "recipient": recipient,
-            "content": body.strip(),
-            "intent": intent,
-            "reply_to": reply_to,
-            "resolve": resolve,
-            "wait": wait,
-            "sent_step": step_num,
-            "sent_at": ts,
-        })
+        calls.append(
+            {
+                "id": mid,
+                "sender": sender,
+                "recipient": recipient,
+                "content": body.strip(),
+                "intent": intent,
+                "reply_to": reply_to,
+                "resolve": resolve,
+                "wait": wait,
+                "sent_step": step_num,
+                "sent_at": ts,
+            }
+        )
 
     return calls
 
@@ -1032,7 +1031,7 @@ def _find_delivery_step(
             return s.step_number, s.timestamp, status
 
         if boundary_mode == "natural":
-            clean_cmd = (s.returncode == 0)
+            clean_cmd = s.returncode == 0
             boundary_action = s.action_phase in ("verify_or_git", "message")
             if clean_cmd and boundary_action:
                 status = "held" if held_count > 1 else "immediate"
@@ -1068,7 +1067,9 @@ def _determine_hold_and_flush_reasons(
         # Check delivery step action
         deliv_step_obj = next((s for s in rsteps if s.step_number == deliv_step), None)
         if deliv_step_obj and deliv_step_obj.action_phase == "verify_or_git":
-            flush_reason = f"clean verification boundary ({deliv_step_obj.command[:30] if deliv_step_obj.command else 'test'})"
+            flush_reason = (
+                f"clean verification boundary ({deliv_step_obj.command[:30] if deliv_step_obj.command else 'test'})"
+            )
         elif deliv_step_obj and deliv_step_obj.action_phase == "message":
             flush_reason = "recipient sent message (turn boundary)"
         else:
@@ -1097,7 +1098,9 @@ def _build_chronological_timeline(
     for m in messages:
         events.append({"ts": m.sent_at, "kind": "msg_sent", "agent": m.sender, "msg_id": m.id, "data": m})
         if m.delivered_at is not None:
-            events.append({"ts": m.delivered_at, "kind": "msg_delivered", "agent": m.recipient, "msg_id": m.id, "data": m})
+            events.append(
+                {"ts": m.delivered_at, "kind": "msg_delivered", "agent": m.recipient, "msg_id": m.id, "data": m}
+            )
 
     for c in compactions1:
         events.append({"ts": c.timestamp, "kind": "compaction", "agent": "agent1", "data": c})
@@ -1122,7 +1125,8 @@ def _build_chronological_timeline(
         a1_curr_step = a1_steps_so_far[-1] if a1_steps_so_far else None
         a1_compactions = sum(1 for c in compactions1 if c.timestamp <= curr_ts)
         a1_held_inbox = [
-            asdict(m) for m in messages
+            asdict(m)
+            for m in messages
             if m.recipient == "agent1"
             and m.sent_at <= curr_ts
             and (m.delivered_at is None or m.delivered_at > curr_ts)
@@ -1134,7 +1138,8 @@ def _build_chronological_timeline(
         a2_curr_step = a2_steps_so_far[-1] if a2_steps_so_far else None
         a2_compactions = sum(1 for c in compactions2 if c.timestamp <= curr_ts)
         a2_held_inbox = [
-            asdict(m) for m in messages
+            asdict(m)
+            for m in messages
             if m.recipient == "agent2"
             and m.sent_at <= curr_ts
             and (m.delivered_at is None or m.delivered_at > curr_ts)
@@ -1161,48 +1166,50 @@ def _build_chronological_timeline(
                 m_dict["live_badge"] = f"⏸ Held in {m.recipient}'s buffer ({m.held_steps} steps)"
             center_msgs.append(m_dict)
 
-        frames.append({
-            "frame_index": idx,
-            "timestamp": curr_ts,
-            "kind": ev["kind"],
-            "agent": ev.get("agent"),
-            "delivery_status": ev["data"].delivery_status if ev["kind"] == "msg_delivered" else None,
-            "description": _format_event_description(ev),
-            "agent1": {
-                "step": a1_curr_step.step_number if a1_curr_step else 0,
-                "action_phase": a1_curr_step.action_phase if a1_curr_step else "none",
-                "command": a1_curr_step.command if a1_curr_step else None,
-                "thought": a1_curr_step.thought if a1_curr_step else None,
-                "output": a1_curr_step.output if a1_curr_step else None,
-                "returncode": a1_curr_step.returncode if a1_curr_step else None,
-                "touched_files": a1_curr_step.touched_files if a1_curr_step else [],
-                "diff_snippet": a1_curr_step.diff_snippet if a1_curr_step else None,
-                "tokens": (a1_curr_step.prompt_tokens + a1_curr_step.completion_tokens) if a1_curr_step else 0,
-                "cost": a1_curr_step.cumulative_cost if a1_curr_step else 0.0,
-                "compactions": a1_compactions,
-                "held_inbox": a1_held_inbox,
-            },
-            "agent2": {
-                "step": a2_curr_step.step_number if a2_curr_step else 0,
-                "action_phase": a2_curr_step.action_phase if a2_curr_step else "none",
-                "command": a2_curr_step.command if a2_curr_step else None,
-                "thought": a2_curr_step.thought if a2_curr_step else None,
-                "output": a2_curr_step.output if a2_curr_step else None,
-                "returncode": a2_curr_step.returncode if a2_curr_step else None,
-                "touched_files": a2_curr_step.touched_files if a2_curr_step else [],
-                "diff_snippet": a2_curr_step.diff_snippet if a2_curr_step else None,
-                "tokens": (a2_curr_step.prompt_tokens + a2_curr_step.completion_tokens) if a2_curr_step else 0,
-                "cost": a2_curr_step.cumulative_cost if a2_curr_step else 0.0,
-                "compactions": a2_compactions,
-                "held_inbox": a2_held_inbox,
-            },
-            "center": {
-                "messages": center_msgs,
-                "threads": [asdict(t) for t in threads.values()],
-                "active_nudge": asdict(ev["data"]) if ev["kind"] == "nudge" else None,
-                "active_compaction": asdict(ev["data"]) if ev["kind"] == "compaction" else None,
-            },
-        })
+        frames.append(
+            {
+                "frame_index": idx,
+                "timestamp": curr_ts,
+                "kind": ev["kind"],
+                "agent": ev.get("agent"),
+                "delivery_status": ev["data"].delivery_status if ev["kind"] == "msg_delivered" else None,
+                "description": _format_event_description(ev),
+                "agent1": {
+                    "step": a1_curr_step.step_number if a1_curr_step else 0,
+                    "action_phase": a1_curr_step.action_phase if a1_curr_step else "none",
+                    "command": a1_curr_step.command if a1_curr_step else None,
+                    "thought": a1_curr_step.thought if a1_curr_step else None,
+                    "output": a1_curr_step.output if a1_curr_step else None,
+                    "returncode": a1_curr_step.returncode if a1_curr_step else None,
+                    "touched_files": a1_curr_step.touched_files if a1_curr_step else [],
+                    "diff_snippet": a1_curr_step.diff_snippet if a1_curr_step else None,
+                    "tokens": (a1_curr_step.prompt_tokens + a1_curr_step.completion_tokens) if a1_curr_step else 0,
+                    "cost": a1_curr_step.cumulative_cost if a1_curr_step else 0.0,
+                    "compactions": a1_compactions,
+                    "held_inbox": a1_held_inbox,
+                },
+                "agent2": {
+                    "step": a2_curr_step.step_number if a2_curr_step else 0,
+                    "action_phase": a2_curr_step.action_phase if a2_curr_step else "none",
+                    "command": a2_curr_step.command if a2_curr_step else None,
+                    "thought": a2_curr_step.thought if a2_curr_step else None,
+                    "output": a2_curr_step.output if a2_curr_step else None,
+                    "returncode": a2_curr_step.returncode if a2_curr_step else None,
+                    "touched_files": a2_curr_step.touched_files if a2_curr_step else [],
+                    "diff_snippet": a2_curr_step.diff_snippet if a2_curr_step else None,
+                    "tokens": (a2_curr_step.prompt_tokens + a2_curr_step.completion_tokens) if a2_curr_step else 0,
+                    "cost": a2_curr_step.cumulative_cost if a2_curr_step else 0.0,
+                    "compactions": a2_compactions,
+                    "held_inbox": a2_held_inbox,
+                },
+                "center": {
+                    "messages": center_msgs,
+                    "threads": [asdict(t) for t in threads.values()],
+                    "active_nudge": asdict(ev["data"]) if ev["kind"] == "nudge" else None,
+                    "active_compaction": asdict(ev["data"]) if ev["kind"] == "compaction" else None,
+                },
+            }
+        )
 
     return frames
 

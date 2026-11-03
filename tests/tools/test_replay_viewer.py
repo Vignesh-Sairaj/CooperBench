@@ -18,7 +18,6 @@ from urllib.request import urlopen
 import pytest
 
 from tools.replay_viewer.compiler import (
-    MAIN_REPO_ROOT,
     CompactionEvent,
     MessageEvent,
     _apply_message_to_threads,
@@ -180,7 +179,7 @@ def test_delivery_timing_held_steps_calculation() -> None:
             action_phase="message",
             touched_files=(),
             returncode=0,
-            output='Message sent to agent2 (id: m1, intent: FYI)',
+            output="Message sent to agent2 (id: m1, intent: FYI)",
             diff_snippet=None,
             prompt_tokens=150,
             completion_tokens=15,
@@ -319,37 +318,193 @@ def test_thread_board_and_intent_tracking() -> None:
     assert len(threads["m1"].history) == 2
 
 
-def test_compile_real_pair() -> None:
-    """Tests compilation against real log data on disk."""
-    if not (MAIN_REPO_ROOT / "logs").exists():
-        pytest.skip("CooperBench logs directory not available.")
+@pytest.fixture()
+def synthetic_repo_root(tmp_path: Path) -> Path:
+    """Creates a hermetic repo root with synthetic logs, results, and dataset for replay compilation."""
+    root = tmp_path / "repo"
+    run_name = "coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing"
+    repo = "dottxt_ai_outlines_task"
+    task_id = "1655"
 
-    runs = list_runs()
-    assert len(runs) > 0
-    # Ensure all runs have expected keys and config badges
-    for r in runs[:5]:
+    pair_dir = root / "logs" / run_name / "coop" / repo / task_id / "f7_f10"
+    pair_dir.mkdir(parents=True, exist_ok=True)
+    res_dir = root / "results" / run_name
+    res_dir.mkdir(parents=True, exist_ok=True)
+
+    (root / "logs" / run_name / "launch.json").write_text(
+        json.dumps(
+            {
+                "run_name": run_name,
+                "setting": "coop",
+                "subset": "flash_10",
+                "git_enabled": True,
+                "agent_config": "delivery_timing: true\ndelivery_max_hold_steps: 4\ndelivery_boundary_mode: natural\nstep_counter: true\n",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (res_dir / "run.json").write_text(
+        json.dumps(
+            {
+                "run_name": run_name,
+                "setting": "coop",
+                "subset": "flash_10",
+                "git_enabled": True,
+                "passed": 1,
+                "total": 1,
+                "cost_usd": 0.42,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (res_dir / "pairs.csv").write_text(
+        "repo,task_id,feature_a,feature_b,both_passed,merge_status,messages_sent,steps_total,cost_usd\n"
+        f"{repo},{task_id},7,10,true,clean,2,4,0.42\n",
+        encoding="utf-8",
+    )
+    (pair_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "repo": repo,
+                "task_id": 1655,
+                "features": [7, 10],
+                "messages_sent": 2,
+                "total_steps": 4,
+                "total_cost": 0.42,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pair_dir / "eval.json").write_text(
+        json.dumps({"both_passed": True, "merge": {"status": "clean"}}),
+        encoding="utf-8",
+    )
+
+    traj1 = {
+        "segments": [
+            {
+                "kind": "solver",
+                "messages": [
+                    {"role": "system", "content": "sys"},
+                    {"role": "user", "content": "task"},
+                    {
+                        "role": "assistant",
+                        "content": "send plan",
+                        "extra": {
+                            "actions": [{"command": "send_message agent2 'plan for f7'"}],
+                            "response": {"id": "a1_1", "usage": {"prompt_tokens": 100, "completion_tokens": 10}},
+                            "timestamp": 100.0,
+                            "cost": 0.1,
+                        },
+                    },
+                    {
+                        "role": "tool",
+                        "content": "Message sent to agent2 (id: m1, intent: Proposal)",
+                        "extra": {"returncode": 0, "raw_output": "Message sent to agent2 (id: m1, intent: Proposal)"},
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "verify",
+                        "extra": {
+                            "actions": [{"command": "pytest"}],
+                            "response": {"id": "a1_2", "usage": {"prompt_tokens": 120, "completion_tokens": 10}},
+                            "timestamp": 120.0,
+                            "cost": 0.11,
+                        },
+                    },
+                    {
+                        "role": "tool",
+                        "content": "PASS",
+                        "extra": {"returncode": 0, "raw_output": "PASS"},
+                    },
+                ],
+            }
+        ]
+    }
+    traj2 = {
+        "segments": [
+            {
+                "kind": "solver",
+                "messages": [
+                    {"role": "system", "content": "sys"},
+                    {"role": "user", "content": "task"},
+                    {
+                        "role": "assistant",
+                        "content": "edit file",
+                        "extra": {
+                            "actions": [{"command": "cat <<'EOF' > outlines.py\nx = 1\nEOF"}],
+                            "response": {"id": "a2_1", "usage": {"prompt_tokens": 100, "completion_tokens": 10}},
+                            "timestamp": 95.0,
+                            "cost": 0.1,
+                        },
+                    },
+                    {
+                        "role": "tool",
+                        "content": "",
+                        "extra": {"returncode": 0, "raw_output": ""},
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "verify and reply",
+                        "extra": {
+                            "actions": [{"command": "pytest && send_message agent1 'looks good'"}],
+                            "response": {"id": "a2_2", "usage": {"prompt_tokens": 150, "completion_tokens": 15}},
+                            "timestamp": 110.0,
+                            "cost": 0.11,
+                        },
+                    },
+                    {
+                        "role": "tool",
+                        "content": "PASS\nMessage sent to agent1 (id: m2, intent: ACK, reply_to: m1, resolved)",
+                        "extra": {
+                            "returncode": 0,
+                            "raw_output": "PASS\nMessage sent to agent1 (id: m2, intent: ACK, reply_to: m1, resolved)",
+                        },
+                    },
+                ],
+            }
+        ]
+    }
+    (pair_dir / "agent1_full_traj.json").write_text(json.dumps(traj1), encoding="utf-8")
+    (pair_dir / "agent2_full_traj.json").write_text(json.dumps(traj2), encoding="utf-8")
+    (pair_dir / "agent1.patch").write_text("diff --git a/a.py b/a.py\n+a\n", encoding="utf-8")
+    (pair_dir / "agent2.patch").write_text("diff --git a/b.py b/b.py\n+b\n", encoding="utf-8")
+    return root
+
+
+def test_compile_real_pair(synthetic_repo_root: Path) -> None:
+    """Tests compilation against a structured run directory on disk."""
+    logs_dir = synthetic_repo_root / "logs"
+    results_dir = synthetic_repo_root / "results"
+    dataset_dir = synthetic_repo_root / "dataset"
+
+    runs = list_runs(logs_dir=logs_dir, results_dir=results_dir)
+    assert len(runs) == 1
+    for r in runs:
         assert "run_name" in r
         assert "config_flags" in r
-        assert "delivery_timing" in r["config_flags"]
+        assert r["config_flags"]["delivery_timing"] is True
 
-    pairs = list_pairs_index()
-    assert len(pairs) > 0
+    pairs = list_pairs_index(logs_dir=logs_dir, results_dir=results_dir)
+    assert len(pairs) == 1
 
-    # Compile the delivery-timing run on outlines 1655 f7_f10
     replay = compile_pair_replay(
         run_name="coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing",
         repo="dottxt_ai_outlines_task",
         task_id=1655,
         features=(7, 10),
+        logs_dir=logs_dir,
+        results_dir=results_dir,
+        dataset_dir=dataset_dir,
     )
 
     assert replay["run_name"] == "coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing"
     assert replay["repo"] == "dottxt_ai_outlines_task"
     assert replay["task_id"] == 1655
     assert replay["features"] == [7, 10]
-    assert len(replay["messages"]) == 9
-    assert len(replay["steps"]["agent1"]) > 0
-    assert len(replay["steps"]["agent2"]) > 0
+    assert len(replay["messages"]) == 2
+    assert len(replay["steps"]["agent1"]) == 2
+    assert len(replay["steps"]["agent2"]) == 2
     assert len(replay["timeline"]) > 0
     assert "agent1" in replay["timeline"][0]
     assert "agent2" in replay["timeline"][0]
@@ -362,10 +517,10 @@ def _find_free_port() -> int:
         return s.getsockname()[1]
 
 
-def test_http_api_endpoints() -> None:
+def test_http_api_endpoints(synthetic_repo_root: Path) -> None:
     """Verifies that the server handles /, /api/runs, /api/index, and /api/replay correctly."""
     port = _find_free_port()
-    ReplayRequestHandler.repo_root = MAIN_REPO_ROOT
+    ReplayRequestHandler.repo_root = synthetic_repo_root
     server = ThreadingHTTPServer(("127.0.0.1", port), ReplayRequestHandler)
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
@@ -385,14 +540,14 @@ def test_http_api_endpoints() -> None:
             assert resp.status == 200
             runs = json.loads(resp.read().decode("utf-8"))
             assert isinstance(runs, list)
-            assert len(runs) > 0
+            assert len(runs) == 1
 
         # 3. Test /api/index
         with urlopen(f"{base_url}/api/index") as resp:
             assert resp.status == 200
             pairs = json.loads(resp.read().decode("utf-8"))
             assert isinstance(pairs, list)
-            assert len(pairs) > 0
+            assert len(pairs) == 1
 
         # 4. Test /api/replay
         replay_url = (
@@ -420,14 +575,14 @@ def test_http_api_endpoints() -> None:
         server.server_close()
 
 
-def test_export_static_html(tmp_path: Path) -> None:
+def test_export_static_html(tmp_path: Path, synthetic_repo_root: Path) -> None:
     """Verifies that export_static_html creates a standalone HTML bundle."""
     from tools.replay_viewer.server import export_static_html
 
     out_file = tmp_path / "standalone_replay.html"
     res = export_static_html(
         output_path=out_file,
-        repo_root=MAIN_REPO_ROOT,
+        repo_root=synthetic_repo_root,
         run_filter=["delivery-timing"],
         pair_filter=["1655"],
     )
