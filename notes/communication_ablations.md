@@ -2,7 +2,7 @@
 
 ## Summary
 
-We evaluated three opt-in communication interventions in `coop --git` across **20 runs (270 evaluated task pairs)** spanning two models (`gemini-3-flash-preview` and `gemini-3.8-flash`) and three benchmark subsets (`flash_10`, `core`, and the 50-pair `flash` split). Implementation details, flags, and config files are in [communication_interventions.md](communication_interventions.md).
+We evaluated three opt-in communication interventions in `coop --git` across **20 runs (360 evaluated task pairs)** spanning two models (`gemini-3-flash-preview` and `gemini-3.8-flash`) and three benchmark subsets (`flash_10`, `core`, and the 50-pair `flash` split). Implementation details, flags, and config files are in [communication_interventions.md](communication_interventions.md).
 
 - **Which communication mechanism helps depends sharply on the model's failure mode and reasoning capacity:**
   - **`gemini-3-flash-preview` (`low` thinking) fails primarily from mid-edit peer interruptions and git merge conflicts** (24 conflicts in 50 pairs on `flash`). **Message Delivery Timing** — a passive harness buffer that holds non-blocking peer messages up to 4 steps until a natural workflow boundary — raised 50-pair `flash` pass rate from **16/50 (32%) to 23/50 (46%, +14 percentage points)** and clean-merge passes from **13/50 (26%) to 20/50 (40%, +14 percentage points)** at identical cost (`$19.60` vs. `$19.72`), while explicit multi-flag protocols (`threading` and `intents`) hurt its solo feature completion.

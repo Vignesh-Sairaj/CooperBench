@@ -20,7 +20,7 @@ Following an ablation design, each intervention is two lines conceptually, toggl
   - `delivery_timing: true` (default `false`)
   - `delivery_max_hold_steps: 4` — forced-flush ceiling in steps; any buffered messages also flush before exit in `_continue_after_exit()` so nothing is dropped when an agent submits.
   - `delivery_boundary_mode: natural | periodic` — `natural` flushes at clean workflow boundaries; `periodic` flushes strictly every `delivery_max_hold_steps` steps as a counterfactual control testing whether *when* messages arrive matters beyond simple batching.
-- **Configs:** `configs/variants/delivery_timing_high.yaml`, `configs/variants/delivery_timing_low.yaml` (counterfactual: `delivery_timing_periodic_{high,low}.yaml`). No task-prompt change is needed.
+- **Configs:** `configs/variants/delivery_timing_medium.yaml`, `configs/variants/delivery_timing_ref_low.yaml` (500-step / 128K reference setup); `configs/variants/delivery_timing_high.yaml`, `configs/variants/delivery_timing_low.yaml`, and `delivery_timing_periodic_{high,low}.yaml` (100-step / 28K ablation setup). No task-prompt change is needed.
 
 ## 2. Message Board / Threading
 
@@ -31,7 +31,7 @@ Following an ablation design, each intervention is two lines conceptually, toggl
   - Every root message opens a thread (`m1`, `m2`, ...), except `--intent FYI` when intents are also enabled. Replying with `--reply-to m1` keeps `m1` `open`; adding `--resolve` transitions `m1` to `resolved`. Unknown `--reply-to` IDs or `--resolve` without `--reply-to` return exit code `1` with known IDs listed.
   - `thread_pin_mode: every_turn | compaction_only` (default `every_turn`) and `thread_max_pinned: 3`.
   - `thread_require_resolved_on_submit: false` — opt-in pre-submit reminder if an incoming thread from a still-running colleague remains open.
-- **Configs:** `configs/variants/message_threading_high.yaml`, `configs/variants/message_threading_low.yaml`.
+- **Configs:** `configs/variants/message_threading_medium.yaml` (500-step / 128K reference setup); `configs/variants/message_threading_high.yaml`, `configs/variants/message_threading_low.yaml` (100-step / 28K ablation setup).
 
 ## 3. Message Intent Tags
 
@@ -41,7 +41,7 @@ Following an ablation design, each intervention is two lines conceptually, toggl
   - `message_intents: true` (default `false`) — validates `--intent` (in any flag position, with `[Intent]` / `Intent:` body-prefix fallback). When combined with threading, `--intent ACK --reply-to <id>` automatically resolves `<id>`, and `--intent FYI` does not open a thread.
   - `intent_filter_fyi: false` — optional receiver-side filter suppressing non-blocking `FYI` updates to test bandwidth vs. coordination tradeoffs.
   - `intent_presubmit_check: true` in intent configs (default `false` in `AgentConfig`) — one-shot pre-submit check in `_nudge_unsubmitted()` for unanswered live-peer `Request`/`Proposal` obligations.
-- **Configs:** `configs/variants/message_intents_high.yaml`, `configs/variants/message_intents_low.yaml`, and full three-way combination `configs/variants/comm_combined_{high,low}.yaml`.
+- **Configs:** `configs/variants/message_intents_medium.yaml`, `configs/variants/message_intents_ref_low.yaml`, and `configs/variants/comm_combined_{medium,ref_low}.yaml` (500-step / 128K reference setup); `configs/variants/message_intents_{high,low}.yaml` and `configs/variants/comm_combined_{high,low}.yaml` (100-step / 28K ablation setup).
 
 ## Results
 

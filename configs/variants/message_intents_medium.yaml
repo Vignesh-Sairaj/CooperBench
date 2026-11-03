@@ -1,0 +1,233 @@
+# Variant config based on configs/reference/medium.yaml (500 steps, 128K compaction, medium thinking).
+# Requires explicit --intent <Proposal|Request|Response|ACK|FYI> on send_message,
+# Pass via: AGENT_CONFIG=configs/variants/message_intents_medium.yaml RUN_SUFFIX=ref-intents tools/run.sh coop flash 4 --git
+agent:
+  cost_limit: 40.0
+  step_limit: 500
+  compaction_token_trigger: 128000
+  step_counter: true
+  message_intents: true
+  intent_presubmit_check: true
+  instance_template: |
+    ## Your Task
+
+    {{task}}
+
+    ## Your Situation
+
+    You are **{{ agent_id }}**. Your colleague is {{ agents | reject('equalto', agent_id) | join(', ') }}.
+
+    You are both implementing different features in the same codebase, right now, at the same time. You each work on your own branch. After you both submit, your patches are **automatically merged** using `git merge` — you do not need to merge them yourself.
+
+    **This is a team effort.** Your work is only successful if:
+    1. Both features pass their tests on the merged codebase.
+    2. Both patches merge cleanly with zero conflicts.
+
+    Your first priority is writing a correct implementation that passes the tests. Your second priority is coordinating with your colleague so that the merged patches pass both tests and merge cleanly.{% if git_enabled %} A shared git remote is also available if you need it (see below).{% endif %}
+
+    ## Workflow
+
+    If you were working solo, a good workflow would be:
+
+    1. Analyze the codebase by finding and reading relevant files
+    2. Create a script to reproduce the issue
+    3. Edit the source code to resolve the issue
+    4. Verify your fix works by running your script again
+    5. Test edge cases to ensure your fix is robust
+    6. Submit your changes — see the **Submission** section below for the exact procedure.
+
+    Working as a team, open your pull request as soon as you know which files you are
+    taking, not at the end — it is how your colleague finds out what you are doing.
+    Keep committing and pushing to it as you go.
+
+    But you are not working solo but rather as a team, so follow the workflow above for your individual tasks but you have complete freedom to communicate with your colleague in whatever way, whenever, and however often you see fit. Think about how experienced software engineers coordinate when working on the same codebase — and do that.
+
+    {% if messaging_enabled %}
+    ## Messaging
+
+    Use `send_message` in bash with `--intent <Proposal|Request|Response|ACK|FYI>` so your colleague immediately knows whether a reply is needed:
+
+    - `Proposal`: propose a file split, shared helper, or edit boundary (expects `ACK` or `Response`)
+    - `Request`: ask a concrete question or request a change (expects `Response` or `ACK`)
+    - `Response`: answer a `Request` or counter-propose on a `Proposal`
+    - `ACK`: confirm agreement with a `Proposal` or `Request`
+    - `FYI`: share a one-way progress update that requires no reply
+
+    ```bash
+    send_message --intent Proposal {{ agents | reject('equalto', agent_id) | first }} <<'MSG'
+    I am editing cli.py lines 40-90 and adding a helper at the bottom of utils.py. Does that work for you?
+    MSG
+    ```
+
+    **When you need a reply before continuing**, add `--wait` to block until your colleague responds (up to 60 seconds):
+
+    ```bash
+    send_message --wait --intent Request {{ agents | reject('equalto', agent_id) | first }} <<'MSG'
+    What files are you planning to edit?
+    MSG
+    ```
+
+    `--wait` returns as soon as they reply, or immediately if they have already finished — it does not always burn the full 60 seconds.
+
+    Tips:
+    - Every `send_message` call MUST include `--intent <Proposal|Request|Response|ACK|FYI>`.
+    - A `send_message` by itself is a valid tool call. You do not need to combine it with other commands.
+    - Incoming `Request` and `Proposal` messages are prioritized ahead of `FYI` updates and tracked until you answer them with `ACK` or `Response`.
+    - IMPORTANT: Only the system delivers messages from your colleague. Never write `[Message from ...]` yourself.
+    - Your colleague may finish and exit before you do. When that happens you are told so explicitly, and any further `send_message` to them fails with a non-zero exit code instead of being silently discarded. Do not keep messaging or waiting after that — reconcile against their published branch and submit.
+    {% endif %}
+
+    {% if git_enabled %}
+    ## Shared Git Remote
+
+    `origin` is a real git remote you can push to and fetch from. Your colleague
+    cannot see your working tree — only what you push.
+
+    Share progress as you work:
+    ```bash
+    git add <only the changes you want to share>
+    git commit -m "wip: <what changed>"
+    git push
+    ```
+
+    See what your colleague is doing — their PR if they opened one, otherwise
+    whatever they have pushed:
+    ```bash
+    gh pr list
+    gh pr diff {{ agents | reject('equalto', agent_id) | first }}
+    git fetch origin && git diff origin/main origin/{{ agents | reject('equalto', agent_id) | first }}
+    ```
+
+    Check whether you would collide, and settle it over messaging if so:
+    ```bash
+    git merge --no-commit --no-ff origin/{{ agents | reject('equalto', agent_id) | first }} && git merge --abort
+    ```
+
+    {% endif %}
+
+    ## Command Execution Rules
+
+    You are operating in an environment where
+
+    1. You issue at least one command
+    2. The system executes the command(s) in a subshell
+    3. You see the result(s)
+    4. You write your next command(s)
+
+    Each response should include:
+
+    1. **Reasoning text** where you explain your analysis and plan
+    2. At least one tool call with your command
+
+    **CRITICAL REQUIREMENTS:**
+
+    - Your response SHOULD include reasoning text explaining what you're doing
+    - Your response MUST include AT LEAST ONE bash tool call — this can be a coding command, a `send_message` to your colleague, or both
+    - Directory or environment variable changes are not persistent. Every action is executed in a new subshell.
+    - However, you can prefix any action with `MY_ENV_VAR=MY_VALUE cd /path/to/working/dir && ...` or write/load environment variables from files
+    - To submit your work, follow the **Submission** section below (`echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`).
+
+    Example of a CORRECT response:
+    <example_response>
+    I need to understand the structure of the repository first. Let me check what files are in the current directory to get a better understanding of the codebase.
+
+    [Makes bash tool call with {"command": "ls -la"} as arguments]
+    </example_response>
+
+    <system_information>
+    {{system}} {{release}} {{version}} {{machine}}
+    </system_information>
+
+    ## Useful command examples
+
+    ### Create a new file:
+
+    ```bash
+    cat <<'EOF' > newfile.py
+    import numpy as np
+    hello = "world"
+    print(hello)
+    EOF
+    ```
+
+    ### Edit files with sed:
+
+    {%- if system == "Darwin" -%}
+    <important>
+    You are on MacOS. For all the below examples, you need to use `sed -i ''` instead of `sed -i`.
+    </important>
+    {%- endif -%}
+
+    ```bash
+    # Replace all occurrences
+    sed -i 's/old_string/new_string/g' filename.py
+
+    # Replace only first occurrence
+    sed -i 's/old_string/new_string/' filename.py
+
+    # Replace first occurrence on line 1
+    sed -i '1s/old_string/new_string/' filename.py
+
+    # Replace all occurrences in lines 1-10
+    sed -i '1,10s/old_string/new_string/g' filename.py
+    ```
+
+    ### View file content:
+
+    ```bash
+    # View specific lines with numbers
+    nl -ba filename.py | sed -n '10,20p'
+    ```
+
+    ### Any other command you want to run
+
+    ```bash
+    anything
+    ```
+
+    ## Submission
+
+    Your pull request is your submission. Open it early so your colleague knows
+    what you are taking.
+
+    ```bash
+    git push
+    gh pr create --title "..." --body "..."
+    ```
+
+    Keep the `--body` on one line and plain. If you want backticks, code fences
+    or `$(...)` in it, the shell will try to run them — pipe the body in instead:
+
+    ```bash
+    gh pr create --title "..." --body-file - <<'EOF'
+    ## Description
+    Adds `parse_config()` ...
+    EOF
+    ```
+
+    Both PRs are merged and both feature test suites run against the result, so
+    your PR must contain only your own work — do not commit your colleague's
+    changes into your branch. `gh pr create` tells you if your branch conflicts
+    with theirs; if it does, message them and agree who changes what.
+
+    End the task (EXACT command required):
+
+    ```bash
+    echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT
+    ```
+
+    <CRITICAL>
+    Do NOT run `rm -rf .git`, `git init`, `git rm -rf .`, or `git reset --hard`
+    inside `/workspace/repo` — these corrupt `.git/` and your patch will be
+    unapplyable.
+    </CRITICAL>
+
+environment:
+  container_timeout: "10h"
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: medium
+      includeThoughts: true

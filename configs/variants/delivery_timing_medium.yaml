@@ -1,0 +1,21 @@
+# Variant config based on configs/reference/medium.yaml (500 steps, 128K compaction, medium thinking).
+# Holds non-blocking incoming messages until natural workflow boundaries (clean test/git/PR
+# Pass via: AGENT_CONFIG=configs/variants/delivery_timing_medium.yaml RUN_SUFFIX=ref-delivery-timing tools/run.sh coop flash 4 --git
+agent:
+  cost_limit: 40.0
+  step_limit: 500
+  compaction_token_trigger: 128000
+  step_counter: true
+  delivery_timing: true
+  delivery_max_hold_steps: 4
+  delivery_boundary_mode: natural
+
+environment:
+  container_timeout: "10h"
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: medium
+      includeThoughts: true
