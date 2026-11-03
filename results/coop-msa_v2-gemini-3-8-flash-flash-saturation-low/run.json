@@ -1,0 +1,46 @@
+{
+  "run_name": "coop-msa_v2-gemini-3-8-flash-flash-saturation-low",
+  "setting": "coop",
+  "git_enabled": false,
+  "agent_framework": "mini_swe_agent_v2",
+  "model": "gemini/gemini-3.8-flash",
+  "subset": "flash",
+  "concurrency": 1,
+  "key_slot": null,
+  "command": "cooperbench run -n coop-msa_v2-gemini-3-8-flash-flash-shard1of2-saturation-low -s flash-shard1of2 -a mini_swe_agent_v2 -m gemini/gemini-3.8-flash --agent-config configs/variants/saturation_low.yaml --setting coop -c 1 --backend docker --dataset-dir logs/_shards/flash-shard1of2",
+  "git_commit": "be330ae4a15f012a3f87d90b28de1b7754b3e5a9",
+  "git_dirty": false,
+  "agent_config_path": "configs/variants/saturation_low.yaml",
+  "agent_config": "# Variant config: \"saturation\" run to find which tasks solo can solve given ample budget.\n# 500 steps, compaction at 64K tokens, step counter, low thinking, $40 per-agent cost cap,\n# and containers kept alive for 10 hours (the 2-hour default would end long runs early).\n# Pass via: AGENT_CONFIG=configs/variants/saturation_low.yaml RUN_SUFFIX=saturation-low tools/run.sh solo ...\nagent:\n  cost_limit: 40.0\n  step_limit: 500\n  compaction_token_trigger: 64000\n  step_counter: true\n\nenvironment:\n  container_timeout: \"10h\"\n\nmodel:\n  model_kwargs:\n    drop_params: true\n    thinkingConfig:\n      thinkingLevel: low\n      includeThoughts: true\n",
+  "budgets": {
+    "step_limit": 500,
+    "compaction_token_trigger": 64000,
+    "thinking_level": "low"
+  },
+  "versions": {
+    "cooperbench": "0.0.29",
+    "litellm": "1.81.12"
+  },
+  "started_at": "2026-11-02T14:53:53.861903",
+  "completed_at": "2026-11-02T21:21:54.798981",
+  "raw_logs": "hf://datasets/agent-coordination-lab/cooperbench-run-logs/coop-msa_v2-gemini-3-8-flash-flash-saturation-low",
+  "headline": {
+    "pairs": 50,
+    "passed": 32,
+    "pass_rate": 0.64,
+    "merge_conflicts": 3,
+    "agents_at_step_limit": 0,
+    "agents_errored": 0,
+    "cost_usd": 49.492,
+    "cost_per_pair_usd": 0.9898,
+    "wall_minutes": 361.0
+  },
+  "load": {
+    "peak_input_tokens_per_min": 2190710,
+    "median_input_tokens_per_min": 599216,
+    "peak_calls_per_min": 62,
+    "total_retries": 193,
+    "rate_limit_retries": 177,
+    "server_busy_retries": 15
+  }
+}

@@ -69,5 +69,6 @@ How to read the table:
 | [`coop-...-git-...-flash-saturation-medium`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-saturation-medium/summary.md) | `coop --git` | 3.8 Flash, medium | `flash` | 500 | 64K | Step counter; `$40` cap | Which thinking level is best for two agents (30/50 `low`, 34/50 `high`)? | 38/50 | `$81.68` |
 | [`solo-...-flash-saturation-medium`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-medium/summary.md) | `solo` | 3.8 Flash, medium | `flash` | 500 | 64K | Step counter; `$40` cap | `solo` reference at `medium` (vs. `coop --git` 38/50) | 33/50 | `$82.07` |
 | [`solo-...-flash-saturation-medium-128k-vertex`](../results/solo-msa_v2-gemini-3-8-flash-flash-saturation-medium-128k-vertex/summary.md) | `solo` | 3.8 Flash, medium (Vertex AI) | `flash` | 500 | 128K | Step counter; `$40` cap | Does a 128K window beat 64K (33/50)? | 37/50 | `$65.46` |
+| [`coop-...-flash-saturation-low`](../results/coop-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `coop` | 3.8 Flash, low | `flash` | 500 | 64K | Step counter; `$40` cap; messaging only | What does the shared git remote add (`coop --git` 30/50)? | 32/50 | `$49.49` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
