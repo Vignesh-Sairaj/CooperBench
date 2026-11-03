@@ -21,6 +21,11 @@ Every run uses the same model setup, so differences in results come from the coo
 
 **Compaction is a soft trigger.** After each model call, the harness checks the size of the request it just sent; only once a request reaches the threshold does it summarize older turns before the next call. The crossing request is sent in full, and a command that prints a lot can push one request well past the threshold: at 128K, the largest single request in the reference runs was about 260K tokens. Gemini 3.8 Flash accepts up to 1M tokens, so this never fails, but it raises token use per minute (see [harness_limits.md](harness_limits.md)).
 
+**Rate limits and caching at 128K vs. 64K** (50-pair `flash` runs, 500 steps):
+
+- **Caching:** Gemini reuses the unchanged start of each request automatically. About 80% to 90% of input tokens were served from this cache at both 64K and 128K, because compaction (which changes the start of the conversation) happens only a few times per agent. Cached input is billed at 10% of the normal input price (`$0.075` instead of `$0.75` per 1M tokens), and the costs in `results/` already include this discount.
+- **Tokens per minute:** at `medium` thinking each agent sends about a third more input tokens per minute at 128K (`solo` 137K vs. 185K, `coop --git` 112K vs. 150K per agent), since every request carries a longer history. Total input per run moved both ways (`solo` `medium` 307M vs. 241M because agents finished in fewer steps; `coop --git` `medium` 295M vs. 341M). At the reference concurrency the 128K runs logged only 1 to 14 rate-limit retries per 50 pairs, so the limit is not binding; it would matter only if concurrency were raised.
+
 The settings live in [`configs/reference/medium.yaml`](../configs/reference/medium.yaml). [`low.yaml`](../configs/reference/low.yaml) and [`high.yaml`](../configs/reference/high.yaml) are identical except for the thinking level and are used only for thinking sweeps.
 
 ### How to Run
