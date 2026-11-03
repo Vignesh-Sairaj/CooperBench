@@ -10,7 +10,7 @@ Every run uses the same model setup, so differences in results come from the coo
 | :--- | :--- | :--- |
 | Model | `gemini-3.8-flash` | Team decision. It has far fewer merge conflicts than `gemini-3-flash-preview`, so failures reflect coordination about the code, not text conflicts. |
 | Provider | Vertex AI, location `global` | Higher rate limits than AI Studio at the same price, and quota is per GCP project, so several projects can run in parallel. |
-| Thinking | `medium` (sweeps also run `low`) | `coop --git` scored best at `medium` (38/50 vs. 30/50 at `low` and 34/50 at `high`). `solo` changes little with thinking level (32 to 37). Google's own default for this model is also `medium`. |
+| Thinking | `medium` (sweeps also run `low`) | The only level that is never clearly worse: `low` costs `solo` 7 pairs, and `high` never beat `medium` while costing more. See [Why `medium` Thinking](#why-medium-thinking). |
 | Step limit | 500 per agent | A ceiling, not a target: the median agent uses 75 to 135 steps. A 300-step limit would have failed 1 to 7 `solo` passes and no `coop` passes, which would tilt the comparison toward `coop`. |
 | Compaction | at 128K tokens (a soft trigger, not a hard window) | Upstream's 28K was sized for small open models, and real coding agents compact much later. Against 64K, accuracy showed no consistent difference (four comparisons, all within run-to-run variation; see [saturation_flash.md](saturation_flash.md#64k-vs-128k-compaction)), cost was about the same, and agents compacted far less (at `medium`, median compactions per agent fell from 5 to 1 for `solo`). Fewer summaries means less of the run depends on what the summary kept. |
 | Step counter | On | Shows "Step n of 500: k left" every turn. At 100 steps it was the largest single improvement we measured (`solo` from 0 to 1 of 10 pairs to 7 of 10), and it costs nothing. |
@@ -27,6 +27,21 @@ Every run uses the same model setup, so differences in results come from the coo
 - **Tokens per minute:** at `medium` thinking each agent sends about a third more input tokens per minute at 128K (`solo` 137K vs. 185K, `coop --git` 112K vs. 150K per agent), since every request carries a longer history. Total input per run moved both ways (`solo` `medium` 307M vs. 241M because agents finished in fewer steps; `coop --git` `medium` 295M vs. 341M). At the reference concurrency the 128K runs logged only 1 to 14 rate-limit retries per 50 pairs, so the limit is not binding; it would matter only if concurrency were raised.
 
 The settings live in [`configs/reference/medium.yaml`](../configs/reference/medium.yaml). [`low.yaml`](../configs/reference/low.yaml) and [`high.yaml`](../configs/reference/high.yaml) are identical except for the thinking level and are used only for thinking sweeps.
+
+### Why `medium` Thinking
+
+Results on the 50-pair `flash` subset at 500 steps. The reference settings (128K, Vertex AI) were run at `low` and `medium`; `high` was run only in the earlier 64K runs.
+
+| Thinking | `solo`, reference | `coop --git`, reference | `solo`, 64K | `coop --git`, 64K | Cost per 50 pairs, reference (`solo` / `coop --git`) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `low` | 30/50 | 34/50 | 36/50 and 32/50 | 30/50 and 30/50 | `$37` / `$49` |
+| `medium` | **37/50** | **35/50** | 33/50 | 38/50, 34/50 | `$65` / `$95` |
+| `high` | not run | not run | 34/50 | 34/50 | (`$110` / `$96` at 64K) |
+
+- **`low` would bias the comparison toward `coop`.** With the reference settings, `solo` lost 7 pairs at `low` and gained none (p = 0.016), while `coop --git` barely moved (34 vs. 35). A single agent carrying both features needs the extra reasoning more than two agents with one feature each.
+- **`high` adds cost without adding passes.** At 64K, `high` never beat `medium` (`solo` 34 vs. 33, `coop --git` 34 vs. 38), and `solo` at `high` was the most expensive run on these pairs (`$110`), with agents taking twice as many steps.
+- **It is the model's own default.** Google's default for `gemini-3.8-flash` is `medium`. Our config still sets it explicitly, because without a setting LiteLLM sends `low` on some providers.
+- **Trade-off:** `medium` costs about twice as much as `low`. Sweeps report `low` as a second column, and `low` is fine for quick checks that a new feature works at all.
 
 ### How to Run
 
