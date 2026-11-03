@@ -17,7 +17,8 @@ Then add a row for the run in [runs.md](runs.md) and write the **Experiment** an
 ## Run Names
 
 - Baselines use the CLI's own name, for example `coop-msa_v2-git-gemini-3-8-flash-flash_10`.
-- Intervention arms add a method suffix (`RUN_SUFFIX=verifier tools/run.sh ...` gives `...-flash_10-verifier`).
+- Runs with the reference settings end in `-ref` (`tools/run.sh coop flash 4 --git` gives `coop-msa_v2-git-gemini-3-8-flash-flash-ref`).
+- Intervention arms add a method suffix instead (`RUN_SUFFIX=verifier tools/run.sh ...` gives `...-flash-verifier`).
 - Repeats of the same configuration add `-r2`, `-r3`, and so on.
 
 ## Files

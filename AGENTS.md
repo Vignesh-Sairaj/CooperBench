@@ -16,8 +16,10 @@
 
 ## Running Benchmarks
 
-- Run every benchmark with the [reference setup](notes/model_config.md#reference-setup) (use `tools/run.sh`), identical across every run in a comparison. Follow [`notes/workflow.md`](notes/workflow.md) for the full sequence from pre-pulling images to committing results.
-- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). With Vertex AI (`vertex_ai/gemini-3.8-flash`, `VERTEXAI_LOCATION=global`), concurrency differs between off-peak and US business hours: off-peak a single GCP project handles `-c 10` (`solo`, `coop`, or `team`) at 28K compaction, while at peak hours `coop` and `team` should drop to `-c 4` (see [`notes/model_config.md`](notes/model_config.md#recommended--c-per-vertex-ai-project)); when running via AI Studio (`MODEL=gemini/gemini-3.8-flash`), use the per-key concurrency table in [`notes/model_config.md`](notes/model_config.md#recommended--c-per-api-key). Run one experiment at a time per project slot (`KEY_SLOT`, see [`notes/workflow.md`](notes/workflow.md)), and check retry counts after each run (see [`notes/model_config.md`](notes/model_config.md#concurrency)).
+- **Always use the reference settings** in [`notes/model_config.md`](notes/model_config.md#reference-setup) (frozen 2026-11-02): `gemini-3.8-flash` on Vertex AI (`global`), `medium` thinking, 500 steps per agent, compaction at 128K tokens, the per-turn step counter, and a `$40` per-agent cost cap. They live in `configs/reference/medium.yaml`, which `tools/run.sh` uses by default.
+- **Never edit `configs/reference/`.** For thinking sweeps, use `configs/reference/low.yaml` (or `high.yaml`) with `RUN_SUFFIX=ref-low`. For an intervention, copy `configs/reference/medium.yaml` into `configs/variants/`, add only the new flag, and run with `AGENT_CONFIG=<that file> RUN_SUFFIX=<name>`.
+- **Concurrency per Vertex AI project:** `solo` `-c 8`; `coop`, `coop --git`, and `team` `-c 4`, at any hour. Run more experiments in parallel on separate projects (`KEY_SLOT`) instead of raising `-c`. Check retry counts after each run.
+- Pre-pull task Docker images before runs (the container start timeout is 120 seconds). Follow [`notes/workflow.md`](notes/workflow.md) for the full sequence from pre-pulling images to committing results.
 
 ## Before Pushing
 

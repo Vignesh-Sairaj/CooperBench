@@ -3,12 +3,14 @@
 #
 # Usage:
 #   tools/run.sh <setting> <subset> <concurrency> [extra cooperbench run args...]
-#   tools/run.sh solo flash_10 10
-#   tools/run.sh coop flash_10 10 --git
+#   tools/run.sh solo flash 8
+#   tools/run.sh coop flash 4 --git
 #
-# The run name is the CLI's own auto-generated name. To add a method suffix for an
-# intervention or variant arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
-# Set AGENT_CONFIG to override the default config (configs/gemini_3_8_flash_high.yaml), and
+# By default every run uses the frozen reference config (configs/reference/medium.yaml,
+# see notes/model_config.md#reference-setup) and its name ends in "-ref", so it never
+# reuses the folder of an older run made with other settings. To add a method suffix for
+# an intervention or variant arm, set RUN_SUFFIX (for example RUN_SUFFIX=verifier).
+# Set AGENT_CONFIG to use another config (for example configs/reference/low.yaml), and
 # MODEL to use another model or provider (default vertex_ai/gemini-3.8-flash; the run name
 # strips the provider prefix and keeps the model name).
 #
@@ -50,7 +52,9 @@ EXTRA=("$@")
 UV_RUN="${UV_RUN:-uv run --frozen}"
 MODEL="${MODEL:-vertex_ai/gemini-3.8-flash}"
 AGENT="mini_swe_agent_v2"
-CONFIG="${AGENT_CONFIG:-configs/gemini_3_8_flash_high.yaml}"
+CONFIG="${AGENT_CONFIG:-configs/reference/medium.yaml}"
+# Reference runs get a "-ref" name suffix unless RUN_SUFFIX is set.
+if [[ -z "${AGENT_CONFIG:-}" && -z "${RUN_SUFFIX:-}" ]]; then RUN_SUFFIX="ref"; fi
 KEY_SLOT="${KEY_SLOT:-}"
 if [[ "$MODEL" == vertex_ai/* ]]; then
   export VERTEXAI_LOCATION="${VERTEXAI_LOCATION:-global}"

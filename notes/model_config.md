@@ -4,42 +4,41 @@ Every run uses the same model setup, so differences in results come from the coo
 
 ## Reference Setup
 
-All new runs, baselines and intervention arms alike, use this setup. It is the upstream harness code at `63b9d44`, unmodified, plus our agent config. It is **not** the upstream default setup: our config raises the cost cap from `$3` to `$10` and turns on `HIGH` thinking instead of the `LOW` thinking LiteLLM silently sends.
-
-| Flag or setting | Value |
-| :--- | :--- |
-| Code | `main` of our fork, with every intervention flag off |
-| Harness | `-a mini_swe_agent_v2 --backend docker` |
-| Model and provider | `-m vertex_ai/gemini-3.8-flash` (`VERTEXAI_PROJECT` in `.env`, `VERTEXAI_LOCATION=global`, `gcloud` ADC) |
-| Agent config | `--agent-config configs/gemini_3_8_flash_high.yaml` |
-| Step limit and compaction | Upstream defaults: 100 steps, compaction at 28K tokens |
-| Concurrency | Per Vertex AI project: `-c 10` off-peak; at peak hours `-c 10` for `solo` and `-c 4` for `coop` and `team` (see [Recommended `-c` per Vertex AI project](#recommended--c-per-vertex-ai-project); for AI Studio `gemini/*` keys, see [Recommended `-c` per API key](#recommended--c-per-api-key)) |
-| Run name | Leave out `-n`; intervention arms add a suffix (see [results_format.md](results_format.md)) |
-| Subsets | `flash_10` for the baseline screen, `flash` for intervention arms |
-
-[`tools/run.sh`](../tools/run.sh) fills in all of these (with `AGENT_CONFIG` available for controlled variant configs under `configs/variants/`, and `MODEL=gemini/gemini-3.8-flash` still supported for AI Studio keys), so prefer it over calling `cooperbench run` directly. The four baselines on `flash_10`:
-
-| Setting | Command | Run name |
-| :--- | :--- | :--- |
-| `solo` | `tools/run.sh solo flash_10 10` | `solo-msa_v2-gemini-3-8-flash-flash_10` |
-| `coop` | `tools/run.sh coop flash_10 10` | `coop-msa_v2-gemini-3-8-flash-flash_10` |
-| `coop --git` | `tools/run.sh coop flash_10 10 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash_10` |
-| `team` | `tools/run.sh team flash_10 10` | `team-msa_v2-gemini-3-8-flash-flash_10` |
-
-**Likely to change:** the upstream 100 steps and 28K compaction stop most agents before they submit. **The per-turn step counter is now part of the standard setup:** at 100 steps it is the largest single improvement measured ([model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md)), and at 500 steps on 50 pairs `solo` scored 36/50 with it vs. 32/50 without it at the same cost, with no pair passing only without it ([saturation_flash.md](saturation_flash.md)). The thinking level and budget will be chosen from the 500-step saturation runs. Whatever the team adopts goes into the reference agent config, and every baseline is rerun on `vertex_ai/gemini-3.8-flash`.
-
-## Settings and Reasons
+**Frozen on 2026-11-02.** Every run whose results will be compared uses these settings. Don't change them: new behavior goes behind a flag in a separate config (see [Changing the Setup](#changing-the-setup)). Most of the evidence comes from 500-step runs on the 50-pair `flash` subset ([saturation_flash.md](saturation_flash.md)).
 
 | Setting | Value | Why |
 | :--- | :--- | :--- |
-| Harness | `mini_swe_agent_v2` on local Docker | Upstream default. `openhands_sdk` only runs on Modal. |
-| Model and provider | `vertex_ai/gemini-3.8-flash` (`global`) | Fixed in our proposal. Vertex AI `global` uses Dynamic Shared Quota (`>3M` input TPM measured per project vs. AI Studio's hard 1M cap) with identical LiteLLM request payload and `$0.75`/`$3.75` per-1M pricing. |
-| Thinking | `HIGH` | Best quality for multi-step coding and merging. Thoughts are saved in trajectories for failure analysis. |
-| Cost cap | `$10` per agent | Upstream's `$3` cap could stop `HIGH`-thinking agents early. |
-| Step limit | 100 per agent | Upstream default. 250 or 500 steps with 64K compaction is under test; see [baseline_ablation_flash10.md](baseline_ablation_flash10.md). |
-| Concurrency | `-c 10` on Vertex AI `global` (or per-key limits on AI Studio `gemini/`) | Runs up to 20 agents on one Vertex AI project without hitting AI Studio's 1M input-TPM wall; see [Concurrency](#concurrency). |
+| Model | `gemini-3.8-flash` | Team decision. It has far fewer merge conflicts than `gemini-3-flash-preview`, so failures reflect coordination about the code, not text conflicts. |
+| Provider | Vertex AI, location `global` | Higher rate limits than AI Studio at the same price, and quota is per GCP project, so several projects can run in parallel. |
+| Thinking | `medium` (sweeps also run `low`) | `coop --git` scored best at `medium` (38/50 vs. 30/50 at `low` and 34/50 at `high`). `solo` changes little with thinking level (32 to 37). Google's own default for this model is also `medium`. |
+| Step limit | 500 per agent | A ceiling, not a target: the median agent uses 75 to 135 steps. A 300-step limit would have failed 1 to 7 `solo` passes and no `coop` passes, which would tilt the comparison toward `coop`. |
+| Compaction | at 128K tokens | Upstream's 28K was sized for small open models. At 128K, `solo` at `medium` rose from 33/50 to 37/50 and got cheaper (median compactions per agent 5 to 1); `coop --git` was unchanged (31 vs. 30 on 45 matched pairs). |
+| Step counter | On | Shows "Step n of 500: k left" every turn. At 100 steps it was the largest single improvement we measured (`solo` from 0 to 1 of 10 pairs to 7 of 10), and it costs nothing. |
+| Cost cap | `$40` per agent | Never reached so far; only a safety net against runaway agents. |
+| Container lifetime | 10 hours | Upstream containers stop after 2 hours, too short for long runs. |
+| Concurrency | Per Vertex AI project: `solo` `-c 8`, `coop` and `team` `-c 4`, at any hour | Keeps runs below the rate limits that make one agent stall while its partner waits; see [Concurrency](#concurrency). |
+| Harness and code | `-a mini_swe_agent_v2 --backend docker`; `main` of our fork with every intervention flag off | Upstream harness at `63b9d44` plus opt-in flags only. |
 
-Thinking and the cost cap are set in [`configs/gemini_3_8_flash_high.yaml`](../configs/gemini_3_8_flash_high.yaml).
+The settings live in [`configs/reference/medium.yaml`](../configs/reference/medium.yaml). [`low.yaml`](../configs/reference/low.yaml) and [`high.yaml`](../configs/reference/high.yaml) are identical except for the thinking level and are used only for thinking sweeps.
+
+### How to Run
+
+[`tools/run.sh`](../tools/run.sh) uses the reference config by default and adds `-ref` to the run name, so a new run never reuses the folder of an older run made with other settings. Load `.env` first (`set -a; source .env; set +a`).
+
+| Run | Command | Run name |
+| :--- | :--- | :--- |
+| `solo` | `tools/run.sh solo flash 8` | `solo-msa_v2-gemini-3-8-flash-flash-ref` |
+| `coop` (messaging only) | `tools/run.sh coop flash 4` | `coop-msa_v2-gemini-3-8-flash-flash-ref` |
+| `coop --git` | `tools/run.sh coop flash 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash-ref` |
+| `team` | `tools/run.sh team flash 4` | `team-msa_v2-gemini-3-8-flash-flash-ref` |
+| `coop --git` at `low` thinking | `AGENT_CONFIG=configs/reference/low.yaml RUN_SUFFIX=ref-low tools/run.sh coop flash 4 --git` | `coop-msa_v2-git-gemini-3-8-flash-flash-ref-low` |
+
+Use `flash_10` (10 pairs) to check that a new feature works at all, and `flash` (50 pairs) or `core` (10 harder pairs) for results. Two runs of the same setup on `flash` differ by about 4 to 6 pairs, so compare arms pair by pair and repeat runs before calling a difference real.
+
+### Changing the Setup
+
+- **Interventions:** copy `configs/reference/medium.yaml` to `configs/variants/<name>_medium.yaml`, add only the new flag (off by default in the code), and run with `AGENT_CONFIG=configs/variants/<name>_medium.yaml RUN_SUFFIX=<name>`. Compare it with a reference run on the same subset, provider, and concurrency.
+- **Old configs:** `configs/gemini_3_8_flash_high.yaml` (100 steps, 28K compaction, `high` thinking) and most of `configs/variants/` produced earlier results and are kept only to reproduce them.
 
 ## Running a Single Pair by Hand
 
@@ -53,7 +52,7 @@ uv run --frozen cooperbench run \
   -r dottxt_ai_outlines_task -t 1371 -f 1,2 \
   -a mini_swe_agent_v2 \
   -m vertex_ai/gemini-3.8-flash \
-  --agent-config configs/gemini_3_8_flash_high.yaml \
+  --agent-config configs/reference/medium.yaml \
   --setting coop --git --backend docker
 ```
 
@@ -65,20 +64,20 @@ Use the same provider (`vertex_ai/`, `gemini/`, or `openrouter/`) for every run 
 
 On `VERTEXAI_LOCATION=global`, Vertex AI uses Dynamic Shared Quota rather than a fixed 1M input-TPM ceiling per project: `flash_10` runs at `-c 10` (20 concurrent agents in `coop`) measured over 3M input tokens per minute on a single project with zero `429` retries. Because Dynamic Shared Quota is shared capacity, peak hours can still see occasional `429` bursts, so keep checking retry counts after each run. To scale across multiple projects in parallel, set `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on in `.env` and pass `KEY_SLOT=<n>` ([workflow.md](workflow.md)). Vertex AI quota is separate from AI Studio quota, so a Vertex run and an AI Studio run on the same GCP project do not compete.
 
-#### Recommended `-c` per Vertex AI project
+#### Reference concurrency per Vertex AI project
 
-`-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`). Keep the concurrent agent count equal across compared runs.
+`-c` counts pairs (`-c` agents for `solo`, `2 * -c` agents for `coop` and `team`).
 
-Use different settings for **peak hours** (US business hours, Monday to Friday 9:00 to 17:00 Pacific) and **off-peak** (nights and weekends). During peak hours, `gemini-3.8-flash` on Vertex AI has little spare shared capacity: requests over the project's base quota can wait in a server-side queue for up to 10 minutes before failing with a 503 and being retried. In `solo` that only adds waiting time. In `coop` and `team` it can change results: an agent refreshes its "still running" signal only between turns, and that signal expires after 600 seconds, so when one turn stalls that long its partner is told "[colleague] is no longer running" and may carry on alone.
+| Setting | `-c` per project | Agents at once | Evidence (128K compaction, `medium` thinking, 50 pairs) |
+| :--- | :---: | :---: | :--- |
+| `solo` | `-c 8` | 8 | 14 rate-limit retries in 195 minutes; retries only add waiting time in `solo` |
+| `coop`, `coop --git`, `team` | `-c 4` | 8 | 14 rate-limit retries in 317 minutes, and no false "colleague stopped" notices |
 
-| Model | Setting | Compaction | Off-peak | Peak hours | Evidence |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| `gemini-3.8-flash` | `solo` | 28K or 64K | `-c 10` | `-c 10` | 64K, `low`, 10 agents at peak: 64 retries over 50 pairs (about 2 per agent-hour); retries only add time |
-| `gemini-3.8-flash` | `coop`, `coop --git`, `team` | 28K | `-c 10` | `-c 4` | 28K, `low`, 20 agents: 15 to 27 retries per 50 pairs off-peak, no false "no longer running" notices; at peak 72 retries per 40 pairs and false notices on 8 pairs |
-| `gemini-3.8-flash` | `coop`, `coop --git`, `team` | 64K | `-c 5` (provisional) | `-c 4` (provisional) | 64K, `low`, 10 agents at peak: false notices on 4 of 38 pairs |
-| `gemini-3-flash-preview` | any | 28K | `-c 10` | `-c 10` | 20 agents: 5.5M to 6.8M input tok/min with 0 retries, off-peak and peak |
+Use the same values at every hour, and don't raise them off-peak for runs that will be compared. To run faster, run more experiments in parallel on separate GCP projects instead.
 
-Lower concurrency reduces the false notices but does not remove them: a 1-pair peak-hour run still had one. After each `coop` or `team` run, count the pairs whose trajectories contain "is no longer running]" alongside the retry counts, and prefer off-peak hours for runs whose results will be compared. The lasting fix is a harness change that refreshes the signal during long model calls (see [tasks.md](tasks.md)).
+**Why `coop` and `team` stay low.** During US business hours (Monday to Friday, 9:00 to 17:00 Pacific), `gemini-3.8-flash` on Vertex AI has little spare shared capacity, and a request can wait up to 10 minutes before it fails and is retried. An agent refreshes its "still running" signal only between turns, and the signal expires after 600 seconds, so when one turn stalls that long, its partner is told "[colleague] is no longer running" and may carry on alone. At `-c 5` with 64K compaction during business hours, 5 of 50 pairs got this false notice; at `-c 4` with 128K, none did. After each `coop` or `team` run, check the retry counts and count the pairs whose trajectories contain "is no longer running]". The lasting fix is a harness change that refreshes the signal during long model calls (see [tasks.md](tasks.md)).
+
+Earlier measurements at 28K and 64K, for reference: `solo` handled 10 agents per project; `coop` at 28K handled 20 agents off-peak but had false notices on 8 of 40 pairs at peak; `gemini-3-flash-preview` handled 20 agents with no retries at any hour.
 
 **Run names do not include the provider.** `vertex_ai/gemini-3.8-flash` and `gemini/gemini-3.8-flash` produce the same run name, and the runner skips every pair that already has a result in that folder. When repeating an AI Studio run on Vertex AI, add a suffix (for example `RUN_SUFFIX=saturation-low-vertex`) so it does not reuse the old folder.
 

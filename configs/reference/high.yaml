@@ -1,0 +1,22 @@
+# Reference agent config, thinking level: high. Frozen on 2026-11-02: do not edit.
+# Every run whose results are compared uses one of configs/reference/{low,medium,high}.yaml;
+# they differ only in thinkingLevel. medium is the default (tools/run.sh uses it).
+# Settings: 500 steps per agent, compaction at 128K tokens, per-turn step counter,
+# $40 per-agent cost cap, containers kept alive for 10 hours.
+# Reasons and evidence: notes/model_config.md#reference-setup.
+# For an intervention, copy this file to configs/variants/ and add only its flag.
+agent:
+  cost_limit: 40.0
+  step_limit: 500
+  compaction_token_trigger: 128000
+  step_counter: true
+
+environment:
+  container_timeout: "10h"
+
+model:
+  model_kwargs:
+    drop_params: true
+    thinkingConfig:
+      thinkingLevel: high
+      includeThoughts: true

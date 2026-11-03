@@ -68,7 +68,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    tools/pull_images.sh flash_10
    ```
 
-2. **Run** with the [reference setup](model_config.md#reference-setup). First load `.env` (`set -a; source .env; set +a`). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model (`vertex_ai/gemini-3.8-flash`), agent config, and backend, and names the run. On Vertex AI `global`, run 10 pairs at once (`-c 10`); if using AI Studio (`MODEL=gemini/...`), follow the per-key table in [model_config.md](model_config.md#recommended--c-per-api-key):
+2. **Run** with the [reference setup](model_config.md#reference-setup). First load `.env` (`set -a; source .env; set +a`). `tools/run.sh <setting> <subset> <pairs at once>` fills in the model (`vertex_ai/gemini-3.8-flash`), the reference agent config, and backend, and names the run with a `-ref` suffix. Run 8 pairs at once for `solo` and 4 for `coop` and `team` on each Vertex AI project ([model_config.md](model_config.md#reference-concurrency-per-vertex-ai-project)); if using AI Studio (`MODEL=gemini/...`), follow the per-key table in [model_config.md](model_config.md#recommended--c-per-api-key):
 
    ```bash
    set -a; source .env; set +a
