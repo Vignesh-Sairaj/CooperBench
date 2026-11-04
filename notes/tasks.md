@@ -15,6 +15,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Confirm `HIGH` thinking with the team | | Our status report left the thinking setting open. Share [model_config.md](model_config.md). |
 | Keep agents' "still running" signal alive during long model calls | | During peak hours a Vertex AI call can wait up to 10 minutes; the signal is refreshed only between turns and expires after 600 seconds, so partners get false "[colleague] is no longer running" notices. Refresh it while a model call is in flight. Plain bug fix; also worth sending upstream. See [model_config.md](concurrency.md#reference-concurrency-vertex-ai). |
 | Fix `team` grading (after the midpoint) | | The lead's combined work is never graded. Pause `team` runs until fixed. See [details](#fix-team-grading). |
+| Fix shared-line conflict-avoidance workarounds / designated integrator (after the midpoint) | | In `coop --git`, the prompt tells agents that their branches must merge with zero `git merge` conflicts while containing only their own work. When two features must add arguments to the same single-line call (`pallets_click_task/2068`), agents avoid editing the shared line by setting attributes after construction (`ed.<attr> = <attr>`), which fails constructor-mocking tests (causing 4 of 5 `solo`-only losses on `lite`). Test an opt-in designated-integrator or shared-call-site rule. See [details](#fix-shared-line-conflict-avoidance-workarounds). |
 
 ## Done
 
@@ -79,3 +80,16 @@ So the lead loses either way:
 - `team` is rerun with the flag on, on `flash_10` and then on `flash` at the team's standard thinking level, and compared pair by pair with `coop --git` and `solo`.
 - Each of the 7 pairs listed above either passes or fails for a reason other than the unpushed integration.
 - An upstream issue or pull request is opened for the mismatch and the message-count bug.
+
+### Fix shared-line conflict-avoidance workarounds
+
+**Problem in one sentence:** when two features must add parameters to the same single-line function or constructor call, `coop.yaml`'s rules ("zero `git merge` conflicts" plus "do not commit your colleague's changes into your branch") trap agents into working around the constructor call, which breaks hidden unit tests that mock the constructor.
+
+**Why the prompt contradicts the test on single-line calls.** Git's three-way merge works line by line. In `pallets_click_task/2068`, `ed = Editor(editor=editor, env=env, require_save=require_save, extension=extension)` in `src/click/termui.py` is on a single line in the base commit. If `agent1` adds its keyword argument to that line on its branch and `agent2` adds its own keyword argument to that same line on its branch, `git merge` always reports a conflict on that line—unless both branches replace that line with the exact same combined call (or one agent merges and integrates both). However, `coop.yaml` explicitly instructs agents: *"your PR must contain only your own work — do not commit your colleague's changes into your branch."* To satisfy both rules at once, the agents agree in chat that only one agent will edit the `Editor(...)` call line and the other will leave the call line untouched and set `ed.<attr> = <attr>` on the next line after construction. That keeps `git merge` conflict-free, but fails any hidden test that mocks `Editor` and asserts the new keyword argument was passed into `Editor(...)`.
+
+**Evidence.** On the 100-pair `lite` reference run ([saturation_flash.md](saturation_flash.md#reference-settings-solo-vs-coop---git)), 4 of the 5 pairs where `solo` beat `coop --git` are `pallets_click_task/2068` pairs (`(5,11)`, `(6,7)`, `(7,10)`, `(9,11)`), and 7 of the 11 `pallets_click_task/2068` pairs in `coop --git` failed for this exact reason. Outside `pallets_click_task`, `coop --git` slightly leads `solo` (`63/80` vs. `61/80`).
+
+**Candidate interventions** (behind an opt-in config flag, off by default):
+
+1. **Allow shared-line co-editing in `coop --git`:** permit peers to agree on the exact combined signature/call-site line (and put the identical combined line on both branches so three-way `git merge` resolves it cleanly) when two features modify the same function signature or constructor call, while keeping feature bodies separate.
+2. **Designated integrator (one of the two peers, or after fixing `team` grading):** have both agents implement and test their own features first, then designate one agent (for example, `agent1` / the `team` lead, or a lightweight post-submission merger agent) to merge both branches, resolve shared call sites directly in the constructor call, run both test suites, and push the integrated result.

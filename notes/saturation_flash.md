@@ -52,7 +52,7 @@ Results on the 50-pair `flash` subset at 500 steps. The reference settings (128K
 | `medium` | **37/50** | **35/50** | 33/50 | 38/50, 34/50 | `$65` / `$95` |
 | `high` | not run | not run | 34/50 | 34/50 | (`$110` / `$96` at 64K) |
 
-- **`low` would bias the comparison toward `coop`.** With the reference settings, `solo` lost 7 pairs at `low` and gained none (p = 0.016), while `coop --git` barely moved (34 vs. 35). A single agent carrying both features needs the extra reasoning more than two agents with one feature each.
+- **`low` would bias the comparison toward `coop`.** With the reference settings, `solo` lost 7 pairs at `low` and gained none (p = 0.016), while `coop --git` barely moved (34 vs. 35). Even at 500 steps and 128K compaction, `coop` has two independent 128K context windows (one per feature), whereas `solo` shares a single 128K context window across both features; a single agent carrying both features in one window needs the extra reasoning of `medium` thinking more than two agents with one feature each.
 - **`high` adds cost without adding passes.** At 64K, `high` never beat `medium` (`solo` 34 vs. 33, `coop --git` 34 vs. 38), and `solo` at `high` was the most expensive run on these pairs (`$110`), with agents taking twice as many steps.
 - **It is the model's own default.** Google's default for `gemini-3.8-flash` is `medium`. The config still sets it explicitly, because without a setting LiteLLM sends `low` on some providers ([harness_limits.md](harness_limits.md#thinking-level-must-be-set-explicitly)).
 - **Trade-off:** `medium` costs about twice as much as `low`. Sweeps report `low` as a second column, and `low` is fine for quick checks that a new feature works at all.
