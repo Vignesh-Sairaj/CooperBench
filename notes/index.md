@@ -23,6 +23,7 @@ A map of the notes in this folder.
 | [baseline_ablation_flash10.md](baseline_ablation_flash10.md) | Step limit and compaction experiments on `flash_10`: why we ran them and what we concluded. |
 | [model_thinking_stepcounter_flash10.md](model_thinking_stepcounter_flash10.md) | Two Gemini models at different thinking levels, the per-turn step counter, and the `team` baseline on `flash_10`. |
 | [saturation_flash.md](saturation_flash.md) | 50-pair `flash` saturation runs (`solo` vs. `coop --git` at `low` and `high`, plus `team` at `low`). |
+| [pallets_click_2068.md](pallets_click_2068.md) | Why `pallets_click_task/2068` accounts for 4 of the 5 `solo`-only wins over `coop --git` on `lite` (single-line `Editor(...)` conflict-avoidance workarounds). |
 
 ## Coordination Interventions
 
