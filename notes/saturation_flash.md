@@ -74,12 +74,13 @@ Compaction is when the harness summarizes older turns to keep each request small
 
 With the frozen reference settings (Vertex AI, 500 steps, 128K compaction, step counter):
 
-| Thinking | `solo` | `coop --git` | Pairs only in `solo` / only in `coop --git` |
+| Subset and thinking | `solo` | `coop --git` | Pairs only in `solo` / only in `coop --git` |
 | :--- | :---: | :---: | :---: |
-| `low` | 30/50 | 34/50 | 1 / 5 |
-| `medium` (default) | 37/50 | 35/50 | 3 / 1 |
+| `flash` (50 pairs), `low` | 30/50 | 34/50 | 1 / 5 |
+| `flash` (50 pairs), `medium` (default) | 37/50, 35/50 | 35/50, 33/50 | 3 / 1 (first run) |
+| `lite` (100 pairs), `medium` (default) | 75/100 | 73/100 | 5 / 3 |
 
-`medium` clearly helps `solo` (7 pairs gained, none lost vs. `low`) but barely changes `coop --git` (35 vs. 34). Which setting wins flips with thinking level, and each gap is about the size of the differences seen when a config was rerun, so with these settings one agent and two agents are roughly level on these 50 pairs.
+`medium` clearly helps `solo` (7 pairs gained, none lost vs. `low`) but barely changes `coop --git` (35 vs. 34). Which setting wins flips with thinking level, and each gap is about the size of the differences seen when a config is repeated (2 pairs on `flash`), so one agent and two agents are roughly level on both the 50-pair `flash` and 100-pair `lite` subsets. On `lite`, 4 of the 5 `solo`-only pairs are in `pallets_click_task/2068` (`(5,11)`, `(6,7)`, `(7,10)`, `(9,11)`); in 7 of the 11 `pallets_click_task/2068` pairs on `lite` (and 4 of 6 in the `flash` repeat), `coop --git` agents still leave the single-line `ed = Editor(...)` call in `src/click/termui.py` untouched by one agent and set `ed.<attr> = <attr>` afterward to avoid a 3-way merge conflict, which fails when a feature's hidden test mocks `Editor` and checks constructor keyword arguments. Outside `pallets_click_task`, `coop --git` scored 63/80 vs. 61/80 for `solo`.
 
 ## Messaging Only vs. Shared Git at `low` Thinking
 
