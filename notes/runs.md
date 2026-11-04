@@ -77,6 +77,7 @@ How to read the table:
 | [`coop-...-git-...-core-ref`](../results/coop-msa_v2-git-gemini-3-8-flash-core-ref/summary.md) | `coop --git` | 3.8 Flash, medium (Vertex AI) | `core` | 500 | 128K | Reference settings | Do two agents lose `core` pairs one agent solves (6/10)? | 5/10 | `$21.62` |
 | [`coop-...-git-...-flash-ref`](../results/coop-msa_v2-git-gemini-3-8-flash-flash-ref/summary.md) | `coop --git` | 3.8 Flash, medium (Vertex AI) | `flash` | 500 | 128K | Reference settings (exact repeat) | How much does the score move with identical settings (35/50 before)? | 33/50 | `$109.52` |
 | [`solo-...-flash-ref`](../results/solo-msa_v2-gemini-3-8-flash-flash-ref/summary.md) | `solo` | 3.8 Flash, medium (Vertex AI) | `flash` | 500 | 128K | Reference settings (exact repeat) | How much does the score move with identical settings (37/50 before)? | 35/50 | `$69.53` |
+| [`solo-...-lite-ref`](../results/solo-msa_v2-gemini-3-8-flash-lite-ref/summary.md) | `solo` | 3.8 Flash, medium (Vertex AI) | `lite` | 500 | 128K | Reference settings on the 100-pair `lite` subset | `solo` half of `solo` vs. `coop --git` on 100 pairs | 75/100 | `$156.17` |
 | [`coop-...-flash-saturation-low`](../results/coop-msa_v2-gemini-3-8-flash-flash-saturation-low/summary.md) | `coop` | 3.8 Flash, low | `flash` | 500 | 64K | Step counter; `$40` cap; messaging only | What does the shared git remote add (`coop --git` 30/50)? | 32/50 | `$49.49` |
 
 Full run names follow `<setting>-msa_v2-[git-]<model>-<subset>[-<variant>]` ([results_format.md](results_format.md)).
