@@ -9,7 +9,6 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | Pre-pull the `flash_10` task images | | Each teammate on their own machine: `tools/pull_images.sh flash_10`. |
 | Repeat the key comparisons on more pairs | | In progress on the 50-pair `flash` subset: `solo` (`low` 36/50, `high` 34/50), `coop --git` (`low` 30/50, `high` 34/50), `team` (`low` 22/50), and `solo` `low` without the step counter (32/50) are done; `medium` thinking (`solo`, `coop --git`) and messaging-only `coop` (`low`) are running. See [saturation_flash.md](saturation_flash.md). |
 | Review the `results/` format | | See [results_format.md](results_format.md), [`tools/run.sh`](../tools/run.sh), and [`tools/export_results.py`](../tools/export_results.py). Every run is listed in [runs.md](runs.md). |
-| Join the Hugging Face logs archive | | Each teammate: accept the org invite, set `HF_TOKEN`, and test a download of a `setup-checks/` folder. See [logs_archive.md](logs_archive.md). |
 | Team-size experiment with 3 and 4 agents (later) | | `coop` and `team` already start one agent per feature (`-f 1,2,3` runs 3 agents), and `team3_250` / `team3_all` list three-feature groups. Blocker: the grader only checks two features (the local path uses the first two; the batch path crashes on three). Extend it to merge all patches and require every feature's tests to pass. |
 | Send the submit-reminder crash fix upstream | | Fixed in our fork (see [harness_limits.md](harness_limits.md)). Rebase the fix onto the latest upstream commit and open a pull request on `cooperbench/CooperBench`. |
 | Confirm `HIGH` thinking with the team | | Our status report left the thinking setting open. Share [model_config.md](model_config.md). |
@@ -25,7 +24,7 @@ Open work for the project. Put your GitHub handle in **Owner** when you pick som
 | First end-to-end run (one `coop --git` pair, no config file) | | Setup works; the pair failed (merge conflict). |
 | Check `HIGH` thinking on one pair | | Config works (about 800 reasoning tokens per call vs. 0 without it). Pair still failed: feature 1 passed, agent2 never wrote a patch for feature 2. |
 | Pick default model and thinking level | | [model_config.md](model_config.md) |
-| Set up the raw logs archive | | Private Hugging Face dataset with every run's logs. See [logs_archive.md](logs_archive.md). |
+| Document the raw `logs/` layout | | Raw trajectories stay local (`logs/<run_name>/`, gitignored). See [logs_archive.md](logs_archive.md). |
 | Write the run and export tools | | [`tools/run.sh`](../tools/run.sh) starts a run and records how it was launched; [`tools/export_results.py`](../tools/export_results.py) writes `results/<run_name>/`. |
 | Find how many agents fit per API key | | The 1M input-tokens-per-minute limit per GCP project sets the limit, not the machine: about 8 agents per key at 28K compaction, 4 at 64K. See [model_config.md](concurrency.md). |
 | Step limit and compaction experiments on `flash_10` | | 9 runs across `solo`, `coop`, and `coop --git`. See [baseline_ablation_flash10.md](baseline_ablation_flash10.md). |

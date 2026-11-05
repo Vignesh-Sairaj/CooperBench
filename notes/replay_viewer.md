@@ -42,19 +42,9 @@ uv run --frozen python -m tools.replay_viewer.server \
 
 The exported HTML file contains all pre-compiled timeline events, chat bubbles, and diffs, so it can be emailed or opened locally by double-clicking.
 
-## Downloading Runs from Hugging Face
+## Local Run Logs (`logs/`)
 
-Raw logs (`logs/<run_name>/`) are gitignored. If a run folder is not already present locally on disk, download it from our private Hugging Face archive dataset `agent-coordination-lab/cooperbench-run-logs` (see [logs_archive.md](logs_archive.md)):
-
-```bash
-set -a; source .env; set +a
-uv run --frozen hf download agent-coordination-lab/cooperbench-run-logs \
-  --repo-type dataset \
-  --include "<run_name>/*" \
-  --local-dir logs/
-```
-
-Once downloaded, the replay viewer discovers the run automatically on the next page refresh or when querying `/api/runs`.
+Raw logs (`logs/<run_name>/`) are gitignored and kept on local disk (see [logs_archive.md](logs_archive.md)). When `logs/<run_name>/` is present locally, the replay viewer discovers the run automatically on startup or page refresh (`/api/runs`); to share a visual trace without copying raw `logs/`, use `--export-html` above.
 
 ## 3-Pane Layout Overview
 

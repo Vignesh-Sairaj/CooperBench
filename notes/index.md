@@ -10,7 +10,7 @@ A map of the notes in this folder.
 | [model_config.md](model_config.md) | The frozen reference settings every run uses, and how to run them. Kept short. |
 | [concurrency.md](concurrency.md) | How many pairs to run at once per GCP project, rate limits, and why `coop` stays low. |
 | [harness_limits.md](harness_limits.md) | How the harness's step limit, compaction, and grading differ from real coding agents, and harness bugs we hit. |
-| [logs_archive.md](logs_archive.md) | Where raw run logs are stored and how to upload or download them. |
+| [logs_archive.md](logs_archive.md) | Local `logs/<run_name>/` directory layout and files per task pair. |
 | [results_format.md](results_format.md) | Run naming and the files in `results/<run_name>/`. |
 | [replay_viewer.md](replay_viewer.md) | 3-pane log replay viewer for scrubbing multi-agent trajectories and coordination. |
 | [tasks.md](tasks.md) | Open and finished tasks. |

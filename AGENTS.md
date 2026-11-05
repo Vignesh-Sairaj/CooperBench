@@ -4,7 +4,7 @@
 
 - Keep the upstream harness code (`63b9d44`) unchanged by default. Put every new behavior, including coordination interventions, behind an opt-in config flag that is off by default, so runs without it behave exactly as before.
 - Don't edit upstream files (`README.md`, `CHANGELOG.md`, `CLAUDE.md`, `docs/`), so upstream merges stay conflict-free.
-- This repository is public. Never commit `.env`, API keys, project IDs, internal URLs, personal names, or scratch scripts.
+- Never commit `.env`, API keys, project IDs, internal URLs, personal names, or scratch scripts, and never upload files or logs to external storage (such as Hugging Face) or push to any remote other than `origin`.
 - Run commands with `uv run --frozen` (and install with `uv sync --frozen`), which use `uv.lock` exactly as committed. Change `uv.lock` only on purpose, with `uv lock` or `uv add` as part of a dependency change.
 
 ## Notes and Results
@@ -13,7 +13,7 @@
 - Write decisions, setup findings, and experiment writeups to `notes/` as short, scannable Markdown for teammates with no prior context: plain language, terms defined where they are used, no private shorthand.
 - Experiment notes cover what was run, why, the results, and the conclusions, without implementation details.
 - [`notes/model_config.md`](notes/model_config.md) holds only the frozen reference settings and how to run them. Keep it short: put evidence in the experiment notes and harness quirks in [`notes/harness_limits.md`](notes/harness_limits.md), and don't add sections to it.
-- Keep raw trajectories in `logs/` (gitignored) and upload them as described in [`notes/logs_archive.md`](notes/logs_archive.md). Export each run to `results/<run_name>/`, give its `summary.md` plain-language **Experiment** and **Observations** sections, and add a row to [`notes/runs.md`](notes/runs.md).
+- Keep raw trajectories in `logs/` (gitignored) on local disk only (see [`notes/logs_archive.md`](notes/logs_archive.md)); never upload raw logs to Hugging Face or external storage. Export each run to `results/<run_name>/`, give its `summary.md` plain-language **Experiment** and **Observations** sections, and add a row to [`notes/runs.md`](notes/runs.md).
 
 ## Running Benchmarks
 

@@ -28,8 +28,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-HF_LOGS_REPO = "agent-coordination-lab/cooperbench-run-logs"
-HF_LOGS_URL = f"https://huggingface.co/datasets/{HF_LOGS_REPO}/tree/main"
 EXPERIMENT_HEADER = "## Experiment"
 OBSERVATIONS_HEADER = "## Observations"
 HAND_WRITTEN = {
@@ -376,7 +374,7 @@ def render_summary(run: dict, pairs: list[dict], hand_written: dict[str, str]) -
             f"| Model retries | {load['rate_limit_retries']} rate-limit (429), "
             f"{load['server_busy_retries']} server-busy (5xx), {load['total_retries']} total |"
         ),
-        f"| Raw logs | [{run['run_name']}/]({HF_LOGS_URL}/{run['run_name']}) (private dataset, see notes/logs_archive.md) |",
+        f"| Raw logs | `logs/{run['run_name']}/` (local disk, gitignored; see notes/logs_archive.md) |",
         "",
     ]
     return "\n".join(lines)
@@ -433,7 +431,7 @@ def main() -> int:
         "versions": launch.get("versions"),
         "started_at": config.get("started_at"),
         "completed_at": summary.get("completed_at"),
-        "raw_logs": f"hf://datasets/{HF_LOGS_REPO}/{args.run_name}",
+        "raw_logs": f"logs/{args.run_name}",
         "headline": {
             "pairs": len(pairs),
             "passed": passed,

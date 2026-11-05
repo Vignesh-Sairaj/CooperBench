@@ -36,7 +36,6 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
       ```bash
       VERTEXAI_LOCATION=global
       VERTEXAI_PROJECT=<project-1-id>
-      HF_TOKEN=hf_...          # for the raw logs archive, see logs_archive.md
 
       # Optional, for parallel runs across separate GCP projects (KEY_SLOT=<n> picks VERTEXAI_PROJECT_<n>):
       VERTEXAI_PROJECT_1=<project-1-id>
@@ -57,8 +56,6 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
       ```
 
       If this returns `403 ... Agent Platform API has not been used in project ...`, enable `aiplatform.googleapis.com` on that project (step 4.1) and wait a minute for it to propagate. With only `VERTEXAI_PROJECT`, runs go one at a time; add `VERTEXAI_PROJECT_1`, `VERTEXAI_PROJECT_2`, and so on to run different experiments in parallel (see step 2 under [Run a Benchmark](#run-a-benchmark)).
-
-5. **Raw logs archive:** join the Hugging Face organization and create your token, as described in [logs_archive.md](logs_archive.md).
 
 ## Run a Benchmark
 
@@ -119,14 +116,7 @@ Rerunning with the same name skips pairs that already have results; add `--force
 2. **Describe the run:** in `results/<run_name>/summary.md`, fill in the two hand-written sections. Re-exporting keeps both.
    - **Experiment:** what the run tests, how it differs from other runs, and why we ran it, in plain words for a teammate with no context.
    - **Observations:** a few bullets on what we saw in the traces. Avoid internal field names and flags; say what happened.
-3. **Archive the raw logs** on Hugging Face (see [logs_archive.md](logs_archive.md)):
-
-   ```bash
-   set -a; source .env; set +a
-   uv run --frozen hf upload agent-coordination-lab/cooperbench-run-logs \
-     logs/<run_name> <run_name> --repo-type dataset
-   ```
-
+3. **Keep raw logs local:** leave `logs/<run_name>/` on local disk only (gitignored; see [logs_archive.md](logs_archive.md)) and never upload it to external storage.
 4. **Index it:** add a row for the run in [runs.md](runs.md).
 5. **Commit and push** `results/<run_name>/` and `notes/runs.md`, after the checks in `AGENTS.md`.
 

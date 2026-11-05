@@ -8,8 +8,6 @@ Every paper table and report should be reproducible from `results/` in Git alone
 set -a; source .env; set +a
 tools/run.sh coop flash_10 10 --git                                  # run, with launch.json + console.log
 uv run --frozen python tools/export_results.py <run_name>            # write results/<run_name>/
-uv run --frozen hf upload agent-coordination-lab/cooperbench-run-logs \
-  logs/<run_name> <run_name> --repo-type dataset                     # archive raw logs
 ```
 
 Then add a row for the run in [runs.md](runs.md) and write the **Experiment** and **Observations** sections in its `summary.md`. The full sequence, including setup and pre-pulling images, is in [workflow.md](workflow.md).
