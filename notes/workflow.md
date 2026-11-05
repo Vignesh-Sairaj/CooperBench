@@ -97,7 +97,7 @@ How to go from a fresh clone to a committed benchmark result. Details live in th
    uv run --frozen python tools/shards.py merge solo-msa_v2-gemini-3-8-flash-flash-shard{1,2,3}of3
    ```
 
-   The merged run is named without the shard part (here `solo-msa_v2-gemini-3-8-flash-flash`); export and archive it like any other run. Use the same `RUN_SUFFIX` and `AGENT_CONFIG` for every shard.
+   The merged run is named without the shard part (here `solo-msa_v2-gemini-3-8-flash-flash`); export it like any other run. Use the same `RUN_SUFFIX` and `AGENT_CONFIG` for every shard.
 
 3. **Watch it** (optional): `tail -f logs/<run_name>/console.log`, and `logs/<run_name>/resources.log` for load, memory, and container count.
 

@@ -6,7 +6,7 @@ A map of the notes in this folder.
 
 | Note | What it covers |
 | :--- | :--- |
-| [workflow.md](workflow.md) | Start here: setup, running a benchmark (including parallel runs), exporting and archiving results. |
+| [workflow.md](workflow.md) | Start here: setup, running a benchmark (including parallel runs), and exporting results. |
 | [model_config.md](model_config.md) | The frozen reference settings every run uses, and how to run them. Kept short. |
 | [concurrency.md](concurrency.md) | How many pairs to run at once per GCP project, rate limits, and why `coop` stays low. |
 | [harness_limits.md](harness_limits.md) | How the harness's step limit, compaction, and grading differ from real coding agents, and harness bugs we hit. |

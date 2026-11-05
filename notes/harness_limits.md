@@ -16,7 +16,7 @@ The upstream harness (`mini_swe_agent_v2`) gives agents much tighter budgets tha
 
 ## Early Checks: Thought Summaries and 64K Compaction
 
-Before the full experiments, we re-ran 3 failed `solo` pairs with 100 steps under two changes (raw logs in `setup-checks/` of the [logs archive](logs_archive.md)):
+Before the full experiments, we re-ran 3 failed `solo` pairs with 100 steps under two changes (raw logs in `logs/setup-checks/`, see [logs_archive.md](logs_archive.md)):
 
 | Pair | Compactions at 28K | With thought summaries turned off | At 64K | Steps used | Submitted | Cost at 64K |
 | :--- | :---: | :---: | :---: | :---: | :---: | ---: |

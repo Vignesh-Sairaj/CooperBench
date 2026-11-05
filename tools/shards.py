@@ -13,8 +13,8 @@ Start one run per shard, each with its own key:
 
 `merge` combines the finished shard runs into logs/<run_name>/, where <run_name> is the shard
 run name without its -shard<k>of<n> part. The merged folder looks like a normal run, so
-tools/export_results.py and the Hugging Face upload work unchanged. Pair folders are hard
-links, so merging uses no extra disk space.
+tools/export_results.py works unchanged. Pair folders are hard links, so merging uses no
+extra disk space.
 """
 
 from __future__ import annotations

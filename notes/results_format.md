@@ -23,7 +23,7 @@ Then add a row for the run in [runs.md](runs.md) and write the **Experiment** an
 
 | File | Contents |
 | :--- | :--- |
-| `run.json` | How the run was launched (command, commit, agent config, versions, concurrency, `key_slot` for runs started with `KEY_SLOT`), a link to the raw logs, `headline` metrics, and `load` stats (`peak_input_tokens_per_min`, `median_input_tokens_per_min`, `peak_calls_per_min`, `total_retries`, `rate_limit_retries`, `server_busy_retries`). |
+| `run.json` | How the run was launched (command, commit, agent config, versions, concurrency, `key_slot` for runs started with `KEY_SLOT`), raw logs path, `headline` metrics, and `load` stats (`peak_input_tokens_per_min`, `median_input_tokens_per_min`, `peak_calls_per_min`, `total_retries`, `rate_limit_retries`, `server_busy_retries`). |
 | `pairs.csv` | One row per task pair: whether it passed and how the patches merged. Use it for pass rates and for comparing runs. |
 | `agents.csv` | One row per agent in each pair (1 per pair in `solo`, 2 in `coop`): what each agent did. Use it to explain why a pair failed, since the agents in a pair often end differently. |
 | `summary.md` | The page to read. In order: **Experiment** (hand-written: what the run tests and why), **Results** (setting, step limit, compaction, pass rate, cost), **Pairs**, **Observations** (hand-written: what we saw in the traces), and **Run Details** (model, config file, concurrency, key slot, commit, API load, raw logs). Re-exporting regenerates everything except the two hand-written sections. |
