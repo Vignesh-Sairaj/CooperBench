@@ -592,3 +592,114 @@ def test_export_static_html(tmp_path: Path, synthetic_repo_root: Path) -> None:
     assert "window.__PRELOADED_REPLAY_BUNDLE__" in content
     assert "dottxt_ai_outlines_task" in content
     assert "CooperBench" in content
+
+
+def test_regime_metadata_and_local_logs_filtering(synthetic_repo_root: Path) -> None:
+    """Verifies regime metadata extraction across regimes and exclusion of unlogged results."""
+    logs_dir = synthetic_repo_root / "logs"
+    results_dir = synthetic_repo_root / "results"
+    dataset_dir = synthetic_repo_root / "dataset"
+
+    # Add a second 128K / 500-step reference run with local logs on the same pair.
+    ref_run = "coop-msa_v2-git-gemini-3-8-flash-flash-ref-intents"
+    ref_pair_dir = logs_dir / ref_run / "coop" / "dottxt_ai_outlines_task" / "1655" / "f7_f10"
+    ref_pair_dir.mkdir(parents=True, exist_ok=True)
+    orig_pair_dir = (
+        logs_dir
+        / "coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing"
+        / "coop"
+        / "dottxt_ai_outlines_task"
+        / "1655"
+        / "f7_f10"
+    )
+    for fname in ("result.json", "eval.json", "agent1_full_traj.json", "agent2_full_traj.json"):
+        (ref_pair_dir / fname).write_text((orig_pair_dir / fname).read_text(encoding="utf-8"), encoding="utf-8")
+
+    ref_res_dir = results_dir / ref_run
+    ref_res_dir.mkdir(parents=True, exist_ok=True)
+    (ref_res_dir / "run.json").write_text(
+        json.dumps(
+            {
+                "run_name": ref_run,
+                "setting": "coop",
+                "git_enabled": True,
+                "model": "vertex_ai/gemini-3.8-flash",
+                "subset": "flash",
+                "budgets": {
+                    "step_limit": 500,
+                    "compaction_token_trigger": 128000,
+                    "thinking_level": "medium",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (ref_res_dir / "pairs.csv").write_text(
+        "repo,task_id,feature_a,feature_b,both_passed,merge_status,messages_sent,steps_total,cost_usd\n"
+        "dottxt_ai_outlines_task,1655,7,10,true,clean,2,4,0.42\n",
+        encoding="utf-8",
+    )
+
+    # Add a results-only run without local logs/; it should not appear as a replayable pair run.
+    unlogged_run = "coop-msa_v2-git-gemini-3-8-flash-lite-ref"
+    unlogged_res_dir = results_dir / unlogged_run
+    unlogged_res_dir.mkdir(parents=True, exist_ok=True)
+    (unlogged_res_dir / "run.json").write_text(
+        json.dumps(
+            {
+                "run_name": unlogged_run,
+                "setting": "coop",
+                "git_enabled": True,
+                "model": "vertex_ai/gemini-3.8-flash",
+                "subset": "lite",
+                "budgets": {
+                    "step_limit": 500,
+                    "compaction_token_trigger": 128000,
+                    "thinking_level": "medium",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (unlogged_res_dir / "pairs.csv").write_text(
+        "repo,task_id,feature_a,feature_b,both_passed,merge_status,messages_sent,steps_total,cost_usd\n"
+        "dottxt_ai_outlines_task,1655,7,10,true,clean,5,20,1.10\n",
+        encoding="utf-8",
+    )
+
+    pairs = list_pairs_index(logs_dir=logs_dir, results_dir=results_dir)
+    assert len(pairs) == 1
+    pair_runs = pairs[0]["runs"]
+    assert set(pair_runs.keys()) == {
+        "coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing",
+        ref_run,
+    }
+    assert unlogged_run not in pair_runs
+
+    low_entry = pair_runs["coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing"]
+    assert low_entry["model"] == "gemini-3-flash-preview"
+    assert low_entry["budgets"]["step_limit"] == 100
+    assert low_entry["budgets"]["compaction_token_trigger"] == 28000
+
+    ref_entry = pair_runs[ref_run]
+    assert ref_entry["model"] == "vertex_ai/gemini-3.8-flash"
+    assert ref_entry["budgets"] == {
+        "step_limit": 500,
+        "compaction_token_trigger": 128000,
+        "thinking_level": "medium",
+    }
+
+    replay = compile_pair_replay(
+        run_name=ref_run,
+        repo="dottxt_ai_outlines_task",
+        task_id=1655,
+        features=(7, 10),
+        logs_dir=logs_dir,
+        results_dir=results_dir,
+        dataset_dir=dataset_dir,
+    )
+    assert replay["model"] == "vertex_ai/gemini-3.8-flash"
+    assert replay["git_enabled"] is True
+    assert replay["budgets"]["compaction_token_trigger"] == 128000
+    assert replay["budgets"]["step_limit"] == 500
+    assert replay["budgets"]["thinking_level"] == "medium"

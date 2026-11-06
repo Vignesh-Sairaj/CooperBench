@@ -111,8 +111,8 @@
     .pills-group {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
-      overflow-x: auto;
       padding-bottom: 2px;
     }
     .run-pill {
@@ -144,6 +144,20 @@
     }
     .status-dot.passed { background-color: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
     .status-dot.failed { background-color: var(--accent-red); }
+    .regime-chip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+    }
+    .run-pill.active .regime-chip {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
     .badge-sub { font-size: 10px; opacity: 0.75; }
 
     .run-badges {
@@ -656,8 +670,9 @@
       </div>
 
       <div class="run-badges" id="runHeadlineBadges">
-        <span class="tag" id="badgeSetting">coop</span>
-        <span class="tag highlight" id="badgeModel">gemini-3-flash</span>
+        <span class="tag" id="badgeSetting">coop --git</span>
+        <span class="tag highlight" id="badgeModel">--</span>
+        <span class="tag" id="badgeRegime">--</span>
         <span class="tag" id="badgeDuration">--s</span>
         <span class="tag" id="badgeCost">$0.00</span>
       </div>
@@ -923,45 +938,175 @@
       renderRunPills();
     }
 
+    function formatDisplayModel(rawModel) {
+      if (!rawModel) return "--";
+      return rawModel.replace(/^(vertex_ai|gemini)\//, "");
+    }
+
+    function formatShortModel(rawModel) {
+      const stripped = formatDisplayModel(rawModel);
+      if (stripped === "gemini-3.8-flash") return "3.8-flash";
+      if (stripped === "gemini-3-flash-preview") return "3-flash";
+      if (stripped === "gemini-3.1-flash-lite-preview") return "3.1-flash-lite";
+      return stripped;
+    }
+
+    function formatSettingLabel(setting, gitEnabled) {
+      const base = setting || "coop";
+      if (base === "coop") return gitEnabled === false ? "coop (no git)" : "coop --git";
+      if (base === "team") return gitEnabled ? "team --git" : "team";
+      return base;
+    }
+
+    function formatBudgetsSummary(budgets) {
+      if (!budgets) return "";
+      const parts = [];
+      if (budgets.compaction_token_trigger) {
+        parts.push(`${Math.round(budgets.compaction_token_trigger / 1000)}K`);
+      }
+      if (budgets.step_limit) {
+        parts.push(`${budgets.step_limit} steps`);
+      }
+      if (budgets.thinking_level) {
+        parts.push(budgets.thinking_level);
+      }
+      return parts.join(" · ");
+    }
+
+    function formatPillRegime(rData) {
+      const parts = [];
+      const shortModel = formatShortModel(rData.model);
+      if (shortModel && shortModel !== "--") parts.push(shortModel);
+      if (rData.setting === "coop" && rData.git_enabled === false) parts.push("no-git");
+      const budgetStr = formatBudgetsSummary(rData.budgets);
+      if (budgetStr) parts.push(budgetStr);
+      return parts.join(" · ");
+    }
+
+    function formatInterventionLabel(rName, rData) {
+      const flags = rData.config_flags || {};
+      if (rName.includes("comm-combined") || (flags.delivery_timing && flags.message_threading && flags.message_intents)) {
+        return "Combined Arms";
+      }
+      if (rName.includes("delivery-periodic") || (flags.delivery_timing && flags.delivery_boundary_mode === "periodic")) {
+        return "Delivery Timing (Periodic)";
+      }
+      if (rName.includes("delivery-timing") || flags.delivery_timing) {
+        return "Delivery Timing";
+      }
+      if (rName.includes("threading") || flags.message_threading) {
+        return "Threading";
+      }
+      if (rName.includes("intents") || flags.message_intents) {
+        return "Intents";
+      }
+      if (rData.setting === "team" || rName.startsWith("team")) {
+        return "Team Baseline";
+      }
+      if (flags.step_counter || rName.includes("stepcounter") || rName.includes("-ref") || rName.includes("saturation")) {
+        return "Baseline";
+      }
+      return "Baseline (No Step Counter)";
+    }
+
+    function interventionSortOrder(label) {
+      if (label.startsWith("Baseline")) return 1;
+      if (label === "Delivery Timing") return 2;
+      if (label === "Delivery Timing (Periodic)") return 3;
+      if (label === "Threading") return 4;
+      if (label === "Intents") return 5;
+      if (label === "Combined Arms") return 6;
+      if (label === "Team Baseline") return 7;
+      return 10;
+    }
+
+    function thinkingSortOrder(level) {
+      const map = { minimal: 1, low: 2, medium: 3, high: 4 };
+      return map[level || ""] || 5;
+    }
+
     function renderRunPills() {
       runPillsContainer.innerHTML = "";
       if (!selectedPair || !selectedPair.runs) return;
 
       const runKeys = Object.keys(selectedPair.runs);
-      // Sort so baseline comes first, then delivery, threading, intents, combined
+      // Group by model & budget regime first, then order Baseline -> Delivery -> Threading -> Intents -> Combined
       runKeys.sort((a, b) => {
-        const order = (name) => {
-          if (name.includes("stepcounter") && !name.includes("delivery") && !name.includes("thread") && !name.includes("intent")) return 1;
-          if (name.includes("delivery-timing")) return 2;
-          if (name.includes("threading")) return 3;
-          if (name.includes("intents")) return 4;
-          if (name.includes("comm-combined")) return 5;
-          return 10;
-        };
-        return order(a) - order(b);
+        const ra = selectedPair.runs[a] || {};
+        const rb = selectedPair.runs[b] || {};
+        const ma = formatShortModel(ra.model);
+        const mb = formatShortModel(rb.model);
+        if (ma !== mb) return ma.localeCompare(mb);
+
+        const ba = ra.budgets || {};
+        const bb = rb.budgets || {};
+        const ca = ba.compaction_token_trigger || 0;
+        const cb = bb.compaction_token_trigger || 0;
+        if (ca !== cb) return ca - cb;
+
+        const sa = ba.step_limit || 0;
+        const sb = bb.step_limit || 0;
+        if (sa !== sb) return sa - sb;
+
+        const ta = thinkingSortOrder(ba.thinking_level);
+        const tb = thinkingSortOrder(bb.thinking_level);
+        if (ta !== tb) return ta - tb;
+
+        const ia = interventionSortOrder(formatInterventionLabel(a, ra));
+        const ib = interventionSortOrder(formatInterventionLabel(b, rb));
+        if (ia !== ib) return ia - ib;
+
+        return a.localeCompare(b);
       });
 
-      runKeys.forEach((rName, idx) => {
+      // Count (label, regime) pairs so repeats (e.g. -r2) stay distinct
+      const pairCounts = {};
+      const computedMeta = {};
+      runKeys.forEach(rName => {
         const rData = selectedPair.runs[rName];
+        const label = formatInterventionLabel(rName, rData);
+        const regime = formatPillRegime(rData);
+        const sig = `${label}||${regime}`;
+        pairCounts[sig] = (pairCounts[sig] || 0) + 1;
+        computedMeta[rName] = { label, regime, sig };
+      });
+
+      const seenCounts = {};
+      runKeys.forEach((rName) => {
+        const rData = selectedPair.runs[rName];
+        const meta = computedMeta[rName];
+        let label = meta.label;
+        if (pairCounts[meta.sig] > 1) {
+          seenCounts[meta.sig] = (seenCounts[meta.sig] || 0) + 1;
+          const rMatch = rName.match(/-(r\d+)$/);
+          label = `${label} (${rMatch ? rMatch[1] : `#${seenCounts[meta.sig]}`})`;
+        }
+
         const pill = document.createElement("div");
         pill.className = "run-pill";
-        if (idx === 0) pill.classList.add("active");
+        pill.dataset.runName = rName;
+        pill.title = meta.regime ? `${rName} (${meta.regime})` : rName;
 
-        const isPassed = rData.both_passed;
+        const dot = document.createElement("span");
+        dot.className = `status-dot ${rData.both_passed ? "passed" : "failed"}`;
+        pill.appendChild(dot);
+
+        const labelSpan = document.createElement("span");
+        labelSpan.textContent = label;
+        pill.appendChild(labelSpan);
+
+        if (meta.regime) {
+          const regimeSpan = document.createElement("span");
+          regimeSpan.className = "regime-chip";
+          regimeSpan.textContent = meta.regime;
+          pill.appendChild(regimeSpan);
+        }
+
+        const subSpan = document.createElement("span");
+        subSpan.className = "badge-sub";
         const mergeStatus = rData.merge_status || "unknown";
-
-        let label = rName;
-        if (rName.includes("delivery-timing")) label = "Delivery Timing";
-        else if (rName.includes("threading")) label = "Threading";
-        else if (rName.includes("intents")) label = "Intents";
-        else if (rName.includes("comm-combined")) label = "Combined Arms";
-        else if (rName.includes("stepcounter")) label = "Baseline";
-
-        pill.innerHTML = `
-          <span class="status-dot ${isPassed ? 'passed' : 'failed'}"></span>
-          <span>${label}</span>
-          <span class="badge-sub">(${mergeStatus}, ${rData.messages_sent} msgs)</span>
-        `;
+        subSpan.textContent = `(${mergeStatus}, ${rData.messages_sent} msgs)`;
+        pill.appendChild(subSpan);
 
         pill.addEventListener("click", () => {
           document.querySelectorAll(".run-pill").forEach(p => p.classList.remove("active"));
@@ -973,14 +1118,13 @@
       });
 
       if (runKeys.length > 0) {
-        // Auto-select delivery-timing or first pill
-        const bestRun = runKeys.find(r => r.includes("delivery-timing")) || runKeys[0];
+        // Prefer reference comm-combined or delivery-timing when present, otherwise first run
+        const bestRun =
+          runKeys.find(r => r.includes("ref-comm-combined")) ||
+          runKeys.find(r => r.includes("delivery-timing")) ||
+          runKeys[0];
         document.querySelectorAll(".run-pill").forEach(p => {
-          if (p.textContent.includes("Delivery Timing") || p.textContent.includes(bestRun)) {
-            p.classList.add("active");
-          } else {
-            p.classList.remove("active");
-          }
+          p.classList.toggle("active", p.dataset.runName === bestRun);
         });
         loadReplay(bestRun);
       }
@@ -1004,6 +1148,9 @@
       const url = `/api/replay?run=${encodeURIComponent(runName)}&repo=${encodeURIComponent(selectedPair.repo)}&task=${selectedPair.task_id}&f1=${selectedPair.feature_a}&f2=${selectedPair.feature_b}`;
       try {
         const resp = await fetch(url);
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
         replayData = await resp.json();
         currentFrameIndex = 0;
         renderReplayMeta();
@@ -1024,9 +1171,13 @@
       // Badges
       const dur = (replayData.result.duration_seconds || 0).toFixed(1);
       const cost = (replayData.result.total_cost || 0).toFixed(3);
+      const settingVal = replayData.setting || replayData.result.setting || "coop";
+      const gitEnabled = replayData.git_enabled !== undefined ? replayData.git_enabled : true;
+      document.getElementById("badgeSetting").textContent = formatSettingLabel(settingVal, gitEnabled);
+      document.getElementById("badgeModel").textContent = formatDisplayModel(replayData.model);
+      document.getElementById("badgeRegime").textContent = formatBudgetsSummary(replayData.budgets) || "--";
       document.getElementById("badgeDuration").textContent = `${dur}s`;
       document.getElementById("badgeCost").textContent = `$${cost}`;
-      document.getElementById("badgeSetting").textContent = replayData.result.setting || "coop";
 
       // Render Patches in patch tabs
       renderDiff(document.getElementById("a1PatchContent"), replayData.patches.agent1);

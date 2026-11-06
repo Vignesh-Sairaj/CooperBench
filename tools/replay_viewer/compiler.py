@@ -130,6 +130,12 @@ _TOUCHED_FILE_RE = re.compile(
     re.VERBOSE,
 )
 
+_HARNESS_CONFIG_DIR = Path(__file__).resolve().parents[2] / "src/cooperbench/agents/mini_swe_agent_v2/config"
+_STEP_LIMIT_RE = re.compile(r"^[ \t]*step_limit:[ \t]*(?P<val>\d+)", re.MULTILINE)
+_COMPACTION_TRIGGER_RE = re.compile(r"^[ \t]*compaction_token_trigger:[ \t]*(?P<val>\d+)", re.MULTILINE)
+_THINKING_LEVEL_RE = re.compile(r"^[ \t]*thinkingLevel:[ \t]*(?P<val>[A-Za-z]+)", re.MULTILINE)
+_CLI_MODEL_RE = re.compile(r"(?:^|[ \t])(?:-m|--model)[ \t=]+(?P<model>[^\s]+)")
+
 # Algebraic Data Types for disjoint event/parse outcomes.
 
 
@@ -235,13 +241,22 @@ def list_runs(
             if not run_path.is_dir():
                 continue
             run_name = run_path.name
+            config = _load_json(run_path / "config.json") or {}
             summary = _load_json(run_path / "summary.json") or {}
             launch = _load_json(run_path / "launch.json") or {}
-            setting = launch.get("setting") or summary.get("setting") or ("coop" if "coop" in run_name else "solo")
+            setting = (
+                config.get("setting")
+                or launch.get("setting")
+                or summary.get("setting")
+                or ("team" if "team" in run_name else ("coop" if "coop" in run_name else "solo"))
+            )
             if setting not in ("coop", "team") and "coop" not in run_name and "team" not in run_name:
                 continue
 
             config_flags = _extract_config_flags(launch, run_path)
+            git_enabled = bool(
+                launch["git_enabled"] if "git_enabled" in launch else (launch.get("git") or ("-git" in run_name))
+            )
             headline = {
                 "both_passed_count": summary.get("both_passed_count", 0),
                 "total_pairs_count": summary.get("total_pairs_count", 0),
@@ -253,9 +268,10 @@ def list_runs(
             discovered[run_name] = {
                 "run_name": run_name,
                 "setting": setting,
-                "model": launch.get("model") or summary.get("model", ""),
+                "model": _extract_model(run_name, config, launch, summary),
                 "subset": launch.get("subset") or ("flash_10" if "flash_10" in run_name else "core"),
-                "git_enabled": bool(launch.get("git")),
+                "git_enabled": git_enabled,
+                "budgets": _extract_budgets(setting, launch),
                 "headline": headline,
                 "config_flags": config_flags,
                 "has_results_dir": False,
@@ -269,18 +285,28 @@ def list_runs(
             run_json = _load_json(res_path / "run.json") or {}
             if not run_json:
                 continue
-            setting = run_json.get("setting") or ("coop" if "coop" in run_name else "solo")
+            existing = discovered.get(run_name, {})
+            setting = (
+                run_json.get("setting")
+                or existing.get("setting")
+                or ("team" if "team" in run_name else ("coop" if "coop" in run_name else "solo"))
+            )
             if setting not in ("coop", "team") and "coop" not in run_name and "team" not in run_name:
                 continue
 
-            headline = run_json.get("headline") or {}
+            headline = run_json.get("headline") or existing.get("headline") or {}
             config_flags = _extract_config_flags(run_json, ld / run_name if ld.exists() else None)
+            git_raw = run_json.get("git_enabled")
+            git_enabled = (
+                bool(git_raw) if git_raw is not None else bool(existing.get("git_enabled") or ("-git" in run_name))
+            )
             discovered[run_name] = {
                 "run_name": run_name,
                 "setting": setting,
-                "model": run_json.get("model", ""),
-                "subset": run_json.get("subset", ""),
-                "git_enabled": bool(run_json.get("git_enabled")),
+                "model": _extract_model(run_name, run_json, existing),
+                "subset": run_json.get("subset") or existing.get("subset", ""),
+                "git_enabled": git_enabled,
+                "budgets": _extract_budgets(setting, run_json),
                 "headline": headline,
                 "config_flags": config_flags,
                 "has_results_dir": True,
@@ -293,27 +319,40 @@ def list_pairs_index(
     logs_dir: Path | str | None = None,
     results_dir: Path | str | None = None,
 ) -> list[dict[str, Any]]:
-    """Returns a cross-run pair index mapping each task pair to every run that tested it."""
+    """Returns a cross-run pair index mapping each replayable task pair to every local run that tested it."""
     ld, rd = _resolve_dirs(logs_dir, results_dir)
     runs = list_runs(ld, rd)
     pair_map: dict[tuple[str, int, int, int], dict[str, Any]] = {}
 
     for run in runs:
         run_name = run["run_name"]
+        run_log_dir = ld / run_name
+        if not run_log_dir.is_dir():
+            continue
         pairs_data = _load_run_pairs(run_name, ld, rd)
         for p in pairs_data:
-            key = (p["repo"], int(p["task_id"]), int(p["feature_a"]), int(p["feature_b"]))
+            repo = p["repo"]
+            task_id = int(p["task_id"])
+            fa = int(p["feature_a"])
+            fb = int(p["feature_b"])
+            if not _find_pair_log_dir(run_log_dir, repo, task_id, fa, fb).exists():
+                continue
+            key = (repo, task_id, fa, fb)
             if key not in pair_map:
                 pair_map[key] = {
-                    "repo": p["repo"],
-                    "task_id": int(p["task_id"]),
-                    "feature_a": int(p["feature_a"]),
-                    "feature_b": int(p["feature_b"]),
-                    "pair_id": f"{p['repo']}:{p['task_id']}:f{p['feature_a']}_f{p['feature_b']}",
+                    "repo": repo,
+                    "task_id": task_id,
+                    "feature_a": fa,
+                    "feature_b": fb,
+                    "pair_id": f"{repo}:{task_id}:f{fa}_f{fb}",
                     "runs": {},
                 }
             pair_map[key]["runs"][run_name] = {
                 "run_name": run_name,
+                "setting": run["setting"],
+                "git_enabled": run["git_enabled"],
+                "model": run["model"],
+                "budgets": run["budgets"],
                 "both_passed": p["both_passed"],
                 "merge_status": p["merge_status"],
                 "messages_sent": p["messages_sent"],
@@ -350,7 +389,23 @@ def compile_pair_replay(
     result_data = _load_json(pair_dir / "result.json") or {}
     eval_data = _load_json(pair_dir / "eval.json") or {}
     run_info = next((r for r in list_runs(ld, rd) if r["run_name"] == run_name), None)
-    config_flags = run_info["config_flags"] if run_info else _extract_config_flags({}, ld / run_name)
+    run_log_dir = ld / run_name
+    launch_fallback = _load_json(run_log_dir / "launch.json") or {}
+    config_fallback = _load_json(run_log_dir / "config.json") or {}
+    setting = str(
+        (run_info or {}).get("setting")
+        or config_fallback.get("setting")
+        or launch_fallback.get("setting")
+        or ("team" if "team" in run_name else "coop")
+    )
+    git_enabled = bool(
+        run_info["git_enabled"]
+        if run_info is not None
+        else (launch_fallback.get("git_enabled") or ("-git" in run_name))
+    )
+    model = run_info["model"] if run_info is not None else _extract_model(run_name, config_fallback, launch_fallback)
+    budgets = run_info["budgets"] if run_info is not None else _extract_budgets(setting, launch_fallback)
+    config_flags = run_info["config_flags"] if run_info else _extract_config_flags(launch_fallback, run_log_dir)
 
     t1_path = _resolve_traj_file(pair_dir, "agent1", fa)
     t2_path = _resolve_traj_file(pair_dir, "agent2", fb)
@@ -388,6 +443,10 @@ def compile_pair_replay(
 
     return {
         "run_name": run_name,
+        "setting": setting,
+        "git_enabled": git_enabled,
+        "model": model,
+        "budgets": budgets,
         "repo": repo,
         "task_id": int(task_id),
         "features": [fa, fb],
@@ -440,6 +499,54 @@ def _parse_features_arg(features: list[int] | tuple[int, int] | str) -> tuple[in
         if match:
             return int(match.group(1)), int(match.group(2))
     raise ValueError(f"Cannot parse features from: {features}")
+
+
+def _extract_model(run_name: str, *sources: dict[str, Any]) -> str:
+    for src in sources:
+        model_val = src.get("model")
+        if isinstance(model_val, str) and model_val.strip():
+            return model_val.strip()
+    for src in sources:
+        cmd_val = src.get("command")
+        if isinstance(cmd_val, str):
+            cmd_match = _CLI_MODEL_RE.search(cmd_val)
+            if cmd_match:
+                return cmd_match.group("model")
+    if "gemini-3-8-flash" in run_name or "-38-" in run_name:
+        return "gemini-3.8-flash"
+    if "gemini-3-1-flash-lite" in run_name:
+        return "gemini-3.1-flash-lite-preview"
+    if "gemini-3-flash" in run_name:
+        return "gemini-3-flash-preview"
+    return ""
+
+
+def _extract_budgets(setting: str, source_dict: dict[str, Any]) -> dict[str, Any]:
+    raw_budgets = source_dict.get("budgets")
+    if isinstance(raw_budgets, dict):
+        step_val = raw_budgets.get("step_limit")
+        comp_val = raw_budgets.get("compaction_token_trigger")
+        think_val = raw_budgets.get("thinking_level")
+        return {
+            "step_limit": int(step_val) if step_val is not None else None,
+            "compaction_token_trigger": int(comp_val) if comp_val is not None else None,
+            "thinking_level": str(think_val).lower() if think_val else None,
+        }
+
+    default_name = "solo.yaml" if setting == "solo" else "coop.yaml"
+    default_path = _HARNESS_CONFIG_DIR / default_name
+    defaults_text = default_path.read_text(encoding="utf-8") if default_path.exists() else ""
+    raw_conf = source_dict.get("agent_config")
+    conf_text = raw_conf if isinstance(raw_conf, str) else ""
+
+    step_match = _STEP_LIMIT_RE.search(conf_text) or _STEP_LIMIT_RE.search(defaults_text)
+    comp_match = _COMPACTION_TRIGGER_RE.search(conf_text) or _COMPACTION_TRIGGER_RE.search(defaults_text)
+    think_match = _THINKING_LEVEL_RE.search(conf_text)
+    return {
+        "step_limit": int(step_match.group("val")) if step_match else None,
+        "compaction_token_trigger": int(comp_match.group("val")) if comp_match else None,
+        "thinking_level": think_match.group("val").lower() if think_match else None,
+    }
 
 
 def _extract_config_flags(source_dict: dict[str, Any], run_log_dir: Path | None) -> dict[str, Any]:

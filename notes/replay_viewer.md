@@ -50,6 +50,10 @@ Raw logs (`logs/<run_name>/`) are gitignored and kept on local disk (see [logs_a
 
 The studio layout is designed for side-by-side behavioral analysis:
 
+### Top Header & Cross-Run Regime Comparison
+- **Active Run Badges**: Displays the setting (`coop --git`, `coop (no git)`, `team`), model, budget regime (`128K · 500 steps · medium` vs. `28K · 100 steps · low`), wall duration, and total cost.
+- **`COMPARE RUNS:` Selector**: Lists every locally logged run for the selected task pair, grouped by model and budget regime, with each button showing pass/fail status, intervention arm, model/budget regime badge, merge outcome, and message count.
+
 ### 1. Left & Right Panes (Agent 1 & Agent 2)
 - **Header**: Shows the assigned feature ID, title, and collapsible specification (`feature.md`).
 - **Live Status Badges**: Step number, current action phase (`Explore`, `Edit`, `Test/Git`, `Message`), exit returncode (`rc=0` vs `rc!=0`), token usage, and context compactions completed.
