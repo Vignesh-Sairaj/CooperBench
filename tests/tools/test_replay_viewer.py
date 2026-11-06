@@ -703,3 +703,121 @@ def test_regime_metadata_and_local_logs_filtering(synthetic_repo_root: Path) -> 
     assert replay["budgets"]["compaction_token_trigger"] == 128000
     assert replay["budgets"]["step_limit"] == 500
     assert replay["budgets"]["thinking_level"] == "medium"
+
+
+def test_timeline_deduplication_and_non_buffered_in_transit(synthetic_repo_root: Path) -> None:
+    """Verifies compact timeline frame references and clean non-buffered transit status."""
+    logs_dir = synthetic_repo_root / "logs"
+    results_dir = synthetic_repo_root / "results"
+    dataset_dir = synthetic_repo_root / "dataset"
+
+    # 1. Delivery-timing run: timeline stores compact step/message IDs without duplicating step outputs.
+    dt_replay = compile_pair_replay(
+        run_name="coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing",
+        repo="dottxt_ai_outlines_task",
+        task_id=1655,
+        features=(7, 10),
+        logs_dir=logs_dir,
+        results_dir=results_dir,
+        dataset_dir=dataset_dir,
+    )
+    frame0 = dt_replay["timeline"][0]
+    assert "output" not in frame0["agent1"]
+    assert "held_ids" in frame0["agent1"]
+    assert "injected_user_messages" not in dt_replay["steps"]["agent1"][0]
+
+    # 2. Baseline run (delivery_timing=False) where message arrives 1 step after send: must be 'immediate' / 'in_transit'.
+    base_run = "coop-msa_v2-git-gemini-3-flash-flash_10-low-stepcounter"
+    base_pair = logs_dir / base_run / "coop" / "dottxt_ai_outlines_task" / "1655" / "f7_f10"
+    base_pair.mkdir(parents=True, exist_ok=True)
+    (logs_dir / base_run / "launch.json").write_text(
+        json.dumps(
+            {
+                "run_name": base_run,
+                "setting": "coop",
+                "subset": "flash_10",
+                "git_enabled": True,
+                "agent_config": "step_counter: true\n",
+            }
+        ),
+        encoding="utf-8",
+    )
+    orig_pair = (
+        logs_dir
+        / "coop-msa_v2-git-gemini-3-flash-flash_10-low-delivery-timing"
+        / "coop"
+        / "dottxt_ai_outlines_task"
+        / "1655"
+        / "f7_f10"
+    )
+    for fname in ("result.json", "eval.json", "agent1_full_traj.json"):
+        (base_pair / fname).write_text((orig_pair / fname).read_text(encoding="utf-8"), encoding="utf-8")
+
+    # Agent 2 starts step 2 at ts=101.0 (before polling m1 sent at ts=100.0) and receives m1 on step 3 at ts=115.0.
+    traj2_base = {
+        "segments": [
+            {
+                "kind": "solver",
+                "messages": [
+                    {"role": "system", "content": "sys"},
+                    {"role": "user", "content": "task"},
+                    {
+                        "role": "assistant",
+                        "content": "step 1",
+                        "extra": {
+                            "actions": [{"command": "cat outlines.py"}],
+                            "response": {"id": "b2_1", "usage": {"prompt_tokens": 100, "completion_tokens": 10}},
+                            "timestamp": 95.0,
+                            "cost": 0.1,
+                        },
+                    },
+                    {"role": "tool", "content": "x = 1", "extra": {"returncode": 0, "raw_output": "x = 1"}},
+                    {
+                        "role": "assistant",
+                        "content": "step 2",
+                        "extra": {
+                            "actions": [{"command": "ls"}],
+                            "response": {"id": "b2_2", "usage": {"prompt_tokens": 110, "completion_tokens": 10}},
+                            "timestamp": 101.0,
+                            "cost": 0.11,
+                        },
+                    },
+                    {"role": "tool", "content": "outlines.py", "extra": {"returncode": 0, "raw_output": "outlines.py"}},
+                    {
+                        "role": "user",
+                        "content": "[Message from agent1 (id: m1)]: plan for f7",
+                        "extra": {"timestamp": 114.0},
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "step 3",
+                        "extra": {
+                            "actions": [{"command": "pytest"}],
+                            "response": {"id": "b2_3", "usage": {"prompt_tokens": 130, "completion_tokens": 10}},
+                            "timestamp": 115.0,
+                            "cost": 0.12,
+                        },
+                    },
+                    {"role": "tool", "content": "PASS", "extra": {"returncode": 0, "raw_output": "PASS"}},
+                ],
+            }
+        ]
+    }
+    (base_pair / "agent2_full_traj.json").write_text(json.dumps(traj2_base), encoding="utf-8")
+
+    base_replay = compile_pair_replay(
+        run_name=base_run,
+        repo="dottxt_ai_outlines_task",
+        task_id=1655,
+        features=(7, 10),
+        logs_dir=logs_dir,
+        results_dir=results_dir,
+        dataset_dir=dataset_dir,
+    )
+    assert base_replay["messages"][0]["delivery_status"] == "immediate"
+    assert base_replay["messages"][0]["held_steps"] == 0
+    for frame in base_replay["timeline"]:
+        assert frame["agent1"]["held_ids"] == []
+        assert frame["agent2"]["held_ids"] == []
+        for cm in frame["center"]["messages"]:
+            assert cm["live_status"] != "held"

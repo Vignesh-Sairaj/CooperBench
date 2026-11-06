@@ -427,6 +427,7 @@
     }
     .status-badge.held { background-color: #d2992222; color: var(--accent-amber); border: 1px solid var(--accent-amber); }
     .status-badge.delivered { background-color: #3fb95022; color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .status-badge.in_transit { background-color: #39c5cf18; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); }
     .status-badge.filtered { background-color: #8b949e22; color: var(--text-muted); border: 1px solid var(--border-color); }
 
     /* Intent badges */
@@ -869,6 +870,8 @@
     let selectedPair = null;
     let selectedRunName = null;
     let replayData = null;
+    let stepsByAgent = { agent1: {}, agent2: {} };
+    let messagesById = {};
     let currentFrameIndex = 0;
     let isPlaying = false;
     let playInterval = null;
@@ -921,9 +924,10 @@
       });
 
       if (allPairs.length > 0) {
-        // Prefer a showcase pair by default if present (e.g. go_chi 26 or dottxt 1655)
-        const showcaseIdx = allPairs.findIndex(p => (p.repo.includes("outlines") && p.task_id === 1655) || (p.repo.includes("chi") && p.task_id === 26));
-        const defaultIdx = showcaseIdx !== -1 ? showcaseIdx : 0;
+        // Prefer primary showcase pairs by default when present
+        const primaryIdx = allPairs.findIndex(p => p.repo.includes("pallets_click") && p.task_id === 2068 && p.feature_a === 6 && p.feature_b === 7);
+        const fallbackShowcaseIdx = allPairs.findIndex(p => (p.repo.includes("outlines") && p.task_id === 1655) || (p.repo.includes("chi") && p.task_id === 26));
+        const defaultIdx = primaryIdx !== -1 ? primaryIdx : (fallbackShowcaseIdx !== -1 ? fallbackShowcaseIdx : 0);
         pairSelect.selectedIndex = defaultIdx;
         selectPair(defaultIdx);
       }
@@ -1130,6 +1134,36 @@
       }
     }
 
+    function prepareReplayLookups() {
+      stepsByAgent = { agent1: {}, agent2: {} };
+      messagesById = {};
+      if (!replayData) return;
+      const s1 = (replayData.steps && replayData.steps.agent1) || [];
+      const s2 = (replayData.steps && replayData.steps.agent2) || [];
+      s1.forEach(s => { stepsByAgent.agent1[s.step_number] = s; });
+      s2.forEach(s => { stepsByAgent.agent2[s.step_number] = s; });
+      (replayData.messages || []).forEach(m => { messagesById[m.id] = m; });
+    }
+
+    function resolveAgentState(agentId, agentFrame) {
+      const stepNum = (agentFrame && agentFrame.step) || 0;
+      const stepObj = (stepsByAgent[agentId] && stepsByAgent[agentId][stepNum]) || null;
+      const heldInbox = (agentFrame && agentFrame.held_inbox)
+        ? agentFrame.held_inbox
+        : ((agentFrame && agentFrame.held_ids) || []).map(id => messagesById[id]).filter(Boolean);
+      return {
+        step: stepNum,
+        action_phase: stepObj ? stepObj.action_phase : ((agentFrame && agentFrame.action_phase) || "none"),
+        command: stepObj ? stepObj.command : ((agentFrame && agentFrame.command) || null),
+        thought: stepObj ? stepObj.thought : ((agentFrame && agentFrame.thought) || null),
+        output: stepObj ? stepObj.output : ((agentFrame && agentFrame.output) || null),
+        returncode: stepObj ? stepObj.returncode : (agentFrame && agentFrame.returncode !== undefined ? agentFrame.returncode : null),
+        tokens: stepObj ? ((stepObj.prompt_tokens || 0) + (stepObj.completion_tokens || 0)) : ((agentFrame && agentFrame.tokens) || 0),
+        compactions: (agentFrame && agentFrame.compactions) || 0,
+        held_inbox: heldInbox,
+      };
+    }
+
     async function loadReplay(runName) {
       if (!selectedPair) return;
       selectedRunName = runName;
@@ -1138,6 +1172,7 @@
       const pairKey = `${runName}:${selectedPair.repo}:${selectedPair.task_id}:f${selectedPair.feature_a}_f${selectedPair.feature_b}`;
       if (window.__PRELOADED_REPLAY_BUNDLE__ && window.__PRELOADED_REPLAY_BUNDLE__.replays && window.__PRELOADED_REPLAY_BUNDLE__.replays[pairKey]) {
         replayData = window.__PRELOADED_REPLAY_BUNDLE__.replays[pairKey];
+        prepareReplayLookups();
         currentFrameIndex = 0;
         renderReplayMeta();
         renderMarkers();
@@ -1152,6 +1187,7 @@
           throw new Error(`HTTP ${resp.status}`);
         }
         replayData = await resp.json();
+        prepareReplayLookups();
         currentFrameIndex = 0;
         renderReplayMeta();
         renderMarkers();
@@ -1243,7 +1279,7 @@
       frameCounter.textContent = `Frame ${currentFrameIndex + 1} / ${total}`;
 
       // Update Agent 1 State
-      const a1 = frame.agent1;
+      const a1 = resolveAgentState("agent1", frame.agent1);
       document.getElementById("a1StepNum").textContent = a1.step;
       const a1Phase = document.getElementById("a1PhasePill");
       a1Phase.textContent = a1.action_phase.replace("_", " ");
@@ -1276,7 +1312,7 @@
       renderHeldTray("agent1", a1.held_inbox);
 
       // Update Agent 2 State
-      const a2 = frame.agent2;
+      const a2 = resolveAgentState("agent2", frame.agent2);
       document.getElementById("a2StepNum").textContent = a2.step;
       const a2Phase = document.getElementById("a2PhasePill");
       a2Phase.textContent = a2.action_phase.replace("_", " ");
@@ -1377,7 +1413,7 @@
       const chatStream = document.getElementById("chatStream");
       chatStream.innerHTML = "";
 
-      const msgs = center.messages || [];
+      const msgs = (center.messages || []).map(m => (m.content !== undefined ? m : { ...(messagesById[m.id] || {}), ...m }));
       if (msgs.length === 0) {
         chatStream.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:20px; font-style:italic;">No messages sent yet at this point in the timeline.</div>`;
       } else {
@@ -1392,7 +1428,17 @@
 
           let statusClass = "delivered";
           if (m.live_status === "held") statusClass = "held";
-          else if (m.live_status === "filtered_fyi") statusClass = "filtered";
+          else if (m.live_status === "in_transit") statusClass = "in_transit";
+          else if (m.live_status === "filtered_fyi" || m.live_status === "undelivered_peer_exited") statusClass = "filtered";
+
+          let liveBadge = m.live_badge;
+          if (!liveBadge) {
+            if (m.live_status === "filtered_fyi") liveBadge = "🔇 Filtered FYI";
+            else if (m.live_status === "delivered") liveBadge = `✓ Delivered @ Step ${m.delivered_step}`;
+            else if (m.live_status === "held") liveBadge = `⏸ Held in ${m.recipient}'s buffer (${m.held_steps} steps)`;
+            else if (m.live_status === "undelivered_peer_exited") liveBadge = "⏭ Peer exited before poll";
+            else liveBadge = `⏳ In transit to ${m.recipient} (next poll)`;
+          }
 
           wrapper.innerHTML = `
             <div class="bubble-meta">
@@ -1406,7 +1452,7 @@
               <div class="bubble-body">${escapeHtml(m.content)}</div>
               <div class="bubble-footer">
                 <span style="color:var(--text-muted);">Sent @ Step ${m.sent_step}</span>
-                <span class="status-badge ${statusClass}">${m.live_badge}</span>
+                <span class="status-badge ${statusClass}">${liveBadge}</span>
               </div>
             </div>
           `;
@@ -1562,7 +1608,10 @@
       if (momentType === "first_msg") {
         targetIdx = replayData.timeline.findIndex(f => f.kind === "msg_sent");
       } else if (momentType === "held") {
-        targetIdx = replayData.timeline.findIndex(f => (f.agent1.held_inbox && f.agent1.held_inbox.length > 0) || (f.agent2.held_inbox && f.agent2.held_inbox.length > 0));
+        targetIdx = replayData.timeline.findIndex(f =>
+          ((f.agent1.held_ids && f.agent1.held_ids.length > 0) || (f.agent1.held_inbox && f.agent1.held_inbox.length > 0)) ||
+          ((f.agent2.held_ids && f.agent2.held_ids.length > 0) || (f.agent2.held_inbox && f.agent2.held_inbox.length > 0))
+        );
       } else if (momentType === "flush") {
         targetIdx = replayData.timeline.findIndex(f => f.kind === "msg_delivered" && f.delivery_status === "held");
       } else if (momentType === "compaction") {
@@ -1570,8 +1619,8 @@
       } else if (momentType === "submit") {
         targetIdx = replayData.timeline.findIndex(f => {
           if (f.kind !== "step") return false;
-          const cmd = (f.agent === "agent1" ? f.agent1.command : f.agent2.command) || "";
-          return cmd.includes("COMPLETE_TASK_AND_SUBMIT");
+          const agentState = resolveAgentState(f.agent, f.agent === "agent1" ? f.agent1 : f.agent2);
+          return (agentState.command || "").includes("COMPLETE_TASK_AND_SUBMIT");
         });
       }
 

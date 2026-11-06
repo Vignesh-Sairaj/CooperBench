@@ -465,14 +465,29 @@ def compile_pair_replay(
             "agent2": [asdict(n) for n in nudges2],
         },
         "steps": {
-            "agent1": [asdict(s) for s in steps1],
-            "agent2": [asdict(s) for s in steps2],
+            "agent1": [_serialize_step(s) for s in steps1],
+            "agent2": [_serialize_step(s) for s in steps2],
         },
         "timeline": timeline,
     }
 
 
 # Private helper functions.
+
+
+_MAX_DISPLAY_OUTPUT_CHARS = 12_000
+
+
+def _serialize_step(step: AgentStep) -> dict[str, Any]:
+    """Serializes an AgentStep for frontend display, omitting internal matching buffers."""
+    data = asdict(step)
+    data.pop("injected_user_messages", None)
+    out = data.get("output")
+    if isinstance(out, str) and len(out) > _MAX_DISPLAY_OUTPUT_CHARS:
+        data["output"] = (
+            f"{out[:_MAX_DISPLAY_OUTPUT_CHARS]}\n... [truncated {len(out) - _MAX_DISPLAY_OUTPUT_CHARS} chars]"
+        )
+    return data
 
 
 def _resolve_dirs(logs_dir: Path | str | None, results_dir: Path | str | None) -> tuple[Path, Path]:
@@ -972,7 +987,10 @@ def _match_and_reconstruct_messages(
             wait=send["wait"],
         )
 
-        held_steps = max((deliv_step - r_step_at_send) if deliv_step is not None else 0, 0)
+        held_steps = max(
+            (deliv_step - r_step_at_send) if (deliv_status == "held" and deliv_step is not None) else 0,
+            0,
+        )
         hold_reason, flush_reason = _determine_hold_and_flush_reasons(
             held_steps=held_steps,
             r_action_at_send=r_action_at_send,
@@ -1117,7 +1135,9 @@ def _find_delivery_step(
             inc_id = m_inc.group("id")
             inc_body = " ".join((m_inc.group("body") or "").split())
             if (inc_id and inc_id == msg_id) or (norm_snippet and norm_snippet in inc_body):
-                status: Literal["immediate", "held"] = "held" if idx >= 1 else "immediate"
+                status: Literal["immediate", "held"] = (
+                    "held" if (delivery_timing and not urgent and idx >= 1) else "immediate"
+                )
                 return s.step_number, s.timestamp, status
 
     if not delivery_timing or urgent:
@@ -1226,52 +1246,50 @@ def _build_chronological_timeline(
 
     for idx, ev in enumerate(events):
         curr_ts = ev["ts"]
+        if ev["kind"] == "msg_sent":
+            _apply_message_to_threads(threads, ev["data"])
 
         # Current state for Agent 1.
         a1_steps_so_far = [s for s in steps1 if s.timestamp <= curr_ts]
         a1_curr_step = a1_steps_so_far[-1] if a1_steps_so_far else None
         a1_compactions = sum(1 for c in compactions1 if c.timestamp <= curr_ts)
-        a1_held_inbox = [
-            asdict(m)
+        a1_held_ids = [
+            m.id
             for m in messages
             if m.recipient == "agent1"
+            and m.delivery_status == "held"
             and m.sent_at <= curr_ts
             and (m.delivered_at is None or m.delivered_at > curr_ts)
-            and m.delivery_status != "filtered_fyi"
         ]
 
         # Current state for Agent 2.
         a2_steps_so_far = [s for s in steps2 if s.timestamp <= curr_ts]
         a2_curr_step = a2_steps_so_far[-1] if a2_steps_so_far else None
         a2_compactions = sum(1 for c in compactions2 if c.timestamp <= curr_ts)
-        a2_held_inbox = [
-            asdict(m)
+        a2_held_ids = [
+            m.id
             for m in messages
             if m.recipient == "agent2"
+            and m.delivery_status == "held"
             and m.sent_at <= curr_ts
             and (m.delivered_at is None or m.delivered_at > curr_ts)
-            and m.delivery_status != "filtered_fyi"
         ]
 
-        # Evolving thread board up to curr_ts.
+        # Center pane visible message references with live status at curr_ts.
         sent_so_far = [m for m in messages if m.sent_at <= curr_ts]
-        for m in sent_so_far:
-            _apply_message_to_threads(threads, m)
-
-        # Center pane visible messages with live status at curr_ts.
         center_msgs = []
         for m in sent_so_far:
-            m_dict = asdict(m)
             if m.delivery_status == "filtered_fyi":
-                m_dict["live_status"] = "filtered_fyi"
-                m_dict["live_badge"] = "🔇 Filtered FYI"
+                live_status = "filtered_fyi"
             elif m.delivered_at is not None and curr_ts >= m.delivered_at:
-                m_dict["live_status"] = "delivered"
-                m_dict["live_badge"] = f"✓ Delivered @ Step {m.delivered_step}"
+                live_status = "delivered"
+            elif m.delivery_status == "held":
+                live_status = "held"
+            elif m.delivery_status == "undelivered_peer_exited":
+                live_status = "undelivered_peer_exited"
             else:
-                m_dict["live_status"] = "held"
-                m_dict["live_badge"] = f"⏸ Held in {m.recipient}'s buffer ({m.held_steps} steps)"
-            center_msgs.append(m_dict)
+                live_status = "in_transit"
+            center_msgs.append({"id": m.id, "live_status": live_status})
 
         frames.append(
             {
@@ -1283,37 +1301,35 @@ def _build_chronological_timeline(
                 "description": _format_event_description(ev),
                 "agent1": {
                     "step": a1_curr_step.step_number if a1_curr_step else 0,
-                    "action_phase": a1_curr_step.action_phase if a1_curr_step else "none",
-                    "command": a1_curr_step.command if a1_curr_step else None,
-                    "thought": a1_curr_step.thought if a1_curr_step else None,
-                    "output": a1_curr_step.output if a1_curr_step else None,
-                    "returncode": a1_curr_step.returncode if a1_curr_step else None,
-                    "touched_files": a1_curr_step.touched_files if a1_curr_step else [],
-                    "diff_snippet": a1_curr_step.diff_snippet if a1_curr_step else None,
-                    "tokens": (a1_curr_step.prompt_tokens + a1_curr_step.completion_tokens) if a1_curr_step else 0,
-                    "cost": a1_curr_step.cumulative_cost if a1_curr_step else 0.0,
                     "compactions": a1_compactions,
-                    "held_inbox": a1_held_inbox,
+                    "held_ids": a1_held_ids,
                 },
                 "agent2": {
                     "step": a2_curr_step.step_number if a2_curr_step else 0,
-                    "action_phase": a2_curr_step.action_phase if a2_curr_step else "none",
-                    "command": a2_curr_step.command if a2_curr_step else None,
-                    "thought": a2_curr_step.thought if a2_curr_step else None,
-                    "output": a2_curr_step.output if a2_curr_step else None,
-                    "returncode": a2_curr_step.returncode if a2_curr_step else None,
-                    "touched_files": a2_curr_step.touched_files if a2_curr_step else [],
-                    "diff_snippet": a2_curr_step.diff_snippet if a2_curr_step else None,
-                    "tokens": (a2_curr_step.prompt_tokens + a2_curr_step.completion_tokens) if a2_curr_step else 0,
-                    "cost": a2_curr_step.cumulative_cost if a2_curr_step else 0.0,
                     "compactions": a2_compactions,
-                    "held_inbox": a2_held_inbox,
+                    "held_ids": a2_held_ids,
                 },
                 "center": {
                     "messages": center_msgs,
-                    "threads": [asdict(t) for t in threads.values()],
-                    "active_nudge": asdict(ev["data"]) if ev["kind"] == "nudge" else None,
-                    "active_compaction": asdict(ev["data"]) if ev["kind"] == "compaction" else None,
+                    "threads": [
+                        {
+                            "thread_id": t.thread_id,
+                            "status": t.status,
+                            "last_sender": t.last_sender,
+                            "last_summary": t.last_summary,
+                        }
+                        for t in threads.values()
+                    ],
+                    "active_nudge": (
+                        {"kind": ev["data"].kind, "message": ev["data"].message[:120]}
+                        if ev["kind"] == "nudge"
+                        else None
+                    ),
+                    "active_compaction": (
+                        {"agent_id": ev["data"].agent_id, "summary": ev["data"].summary[:120]}
+                        if ev["kind"] == "compaction"
+                        else None
+                    ),
                 },
             }
         )
