@@ -1,3 +1,18 @@
+> ### CS329Z Midpoint Prototype — 3-Pane Coordination Replay Viewer & Harness Setup
+>
+> - **Zero-setup interactive showcase (no Python, Docker, or local `logs/` needed):** Clone this repository and open [`demos/midpoint_showcase.html`](demos/midpoint_showcase.html) locally in any modern browser *(GitHub's web code viewer displays raw HTML source rather than rendering `.html` files)*. Use the **`TASK PAIR:`** dropdown and **`COMPARE RUNS:`** buttons to switch across model/budget regimes, scrub frames (`0..T-1`), inspect buffered inboxes and pinned threads, and compare `Final Patch` diffs.
+> - **Run the live replay server or benchmarks:**
+>   - Live replay studio against local `logs/`: `uv run --frozen python -m tools.replay_viewer.server --port 8765` (see [`notes/replay_viewer.md`](notes/replay_viewer.md))
+>   - Full benchmark setup, frozen reference configs (`configs/reference/`), intervention variants (`configs/variants/`), and exported results (`results/`): start at [`notes/index.md`](notes/index.md) and [`notes/workflow.md`](notes/workflow.md)
+>
+> | Task Pair (`TASK PAIR:`) | Runs to Compare (`COMPARE RUNS:`) | What It Showcases |
+> | :--- | :--- | :--- |
+> | **`pallets_click_task` (`#2068 f6_f7`)** | `Combined Arms` (`✓ PASS`) & `Intents` (`✗ FAIL`, `clean` merge) at `3.8-flash · 128K · 500 steps · medium` | **1) Full mechanism tour (`Combined Arms`, Frame 33):** incoming messages held (`⏸ Held`) in the Buffered Inbox Tray while the peer is mid-probe, Active Thread Board preserved across compactions, and `Proposal` / `Response` / `ACK` / `FYI` speech-act tags.<br>**2) Remaining branch-isolation bottleneck (`Intents`, `m19` + `Final Patch` tab):** even with clean speech-act coordination and `0` merge conflicts, `Agent 1` avoids conflicting on the shared `ed = Editor(...)` line by setting `ed.process_priority = ...` on the next line instead—merging cleanly yet failing `feature6`'s constructor-mock test. |
+> | **`openai_tiktoken_task` (`#0 f3_f6`)** | `Baseline` (`✗ FAIL`, `conflicts`, `25` msgs) vs. `Delivery Timing` (`✓ PASS`, `clean`, `16` msgs) at `3-flash · 28K · 100 steps · low` | **Controlled causal flip under tight context (`28K` compaction):** unbuffered mid-edit messages in `Baseline` interrupt `tiktoken/core.py` edits across `5` mid-repair compactions (`152` steps), whereas holding messages `1–4` steps until a passing check (`rc=0`) finishes cleanly in `70` steps (`✓ PASS`). *(Compare `Intents` at `128K`: `✓ PASS` in `14` msgs.)* |
+> | **`dottxt_ai_outlines_task` (`#1655 f7_f10`)** | `Baseline` (`✗ FAIL`, `conflicts`, `16` msgs) vs. `Delivery Timing` (`✓ PASS`, `clean`, `6` msgs) at `3-flash · 28K · 100 steps · low` | **Tight-context conflict recovery:** holding mid-edit notifications until verification boundaries cuts reactive chatter (`16` → `6` messages) and recovers a clean merge (`✗ FAIL` → `✓ PASS`). |
+
+---
+
 # CooperBench
 
 [![arXiv](https://img.shields.io/badge/arXiv-2601.13295-b31b1b.svg)](https://arxiv.org/abs/2601.13295)

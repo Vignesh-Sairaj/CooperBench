@@ -42,6 +42,32 @@ uv run --frozen python -m tools.replay_viewer.server \
 
 The exported HTML file contains all pre-compiled timeline events, chat bubbles, and diffs, so it can be emailed or opened locally by double-clicking.
 
+### Pre-Built Midpoint Showcase (`demos/midpoint_showcase.html`)
+
+[`demos/midpoint_showcase.html`](../demos/midpoint_showcase.html) bundles 12 pre-compiled replays (`3` task pairs × `4` runs spanning both the constrained `3-flash · 28K · 100 steps · low` regime and the frozen `3.8-flash · 128K · 500 steps · medium` reference regime) so teammates and course staff can open it directly in a browser without local `logs/`:
+
+| Task Pair | Highlighted Comparison | Takeaway |
+| :--- | :--- | :--- |
+| `pallets_click_task` (`#2068 f6_f7`) | `Combined Arms` (`✓ PASS`) vs. `Intents` (`✗ FAIL`, `clean`) at `3.8-flash · 128K · 500 steps · medium` | `Combined Arms` (Frame 33) demonstrates live inbox buffering (`⏸ Held`), pinned threads across compaction, and speech-act tags; `Intents` (`m19` + `Final Patch` tab) shows why single-line shared-call-site conflict avoidance (`ed = Editor(...)`) still causes `0`-conflict test failures under symmetric branch isolation. |
+| `openai_tiktoken_task` (`#0 f3_f6`) | `Baseline` (`✗ FAIL`) vs. `Delivery Timing` (`✓ PASS`) at `3-flash · 28K · 100 steps · low` | Unbuffered mid-edit arrivals in `Baseline` trigger `5` mid-repair compactions (`152` steps, merge conflict), whereas holding messages until `rc=0` verification passes cleanly in `70` steps (`16` msgs). |
+| `dottxt_ai_outlines_task` (`#1655 f7_f10`) | `Baseline` (`✗ FAIL`) vs. `Delivery Timing` (`✓ PASS`) at `3-flash · 28K · 100 steps · low` | Buffering mid-edit arrivals cuts reactive chatter (`16` → `6` messages) and flips a merge conflict into a clean pass. |
+
+To regenerate [`demos/midpoint_showcase.html`](../demos/midpoint_showcase.html) from local `logs/`:
+
+```bash
+uv run --frozen python -m tools.replay_viewer.server \
+  --export-html demos/midpoint_showcase.html \
+  --runs \
+    coop-msa_v2-git-gemini-3-flash-flash-low-stepcounter \
+    coop-msa_v2-git-gemini-3-flash-flash-low-delivery-timing \
+    coop-msa_v2-git-gemini-3-8-flash-flash-ref-intents \
+    coop-msa_v2-git-gemini-3-8-flash-flash-ref-comm-combined \
+  --pairs \
+    pallets_click_task:2068:f6_f7 \
+    openai_tiktoken_task:0:f3_f6 \
+    dottxt_ai_outlines_task:1655:f7_f10
+```
+
 ## Local Run Logs (`logs/`)
 
 Raw logs (`logs/<run_name>/`) are gitignored and kept on local disk (see [logs_archive.md](logs_archive.md)). When `logs/<run_name>/` is present locally, the replay viewer discovers the run automatically on startup or page refresh (`/api/runs`); to share a visual trace without copying raw `logs/`, use `--export-html` above.

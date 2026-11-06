@@ -3,7 +3,7 @@
 ## Upstream Hygiene
 
 - Keep the upstream harness code (`63b9d44`) unchanged by default. Put every new behavior, including coordination interventions, behind an opt-in config flag that is off by default, so runs without it behave exactly as before.
-- Don't edit upstream files (`README.md`, `CHANGELOG.md`, `CLAUDE.md`, `docs/`), so upstream merges stay conflict-free.
+- Don't edit upstream files (`CHANGELOG.md`, `CLAUDE.md`, `docs/`, or the upstream body of `README.md` below the top CS329Z prototype callout), so upstream merges stay conflict-free.
 - Never commit `.env`, API keys, project IDs, internal URLs, personal names, or scratch scripts, and never upload files or logs to external storage (such as Hugging Face) or push to any remote other than `origin`.
 - Run commands with `uv run --frozen` (and install with `uv sync --frozen`), which use `uv.lock` exactly as committed. Change `uv.lock` only on purpose, with `uv lock` or `uv add` as part of a dependency change.
 
