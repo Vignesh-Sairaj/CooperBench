@@ -200,6 +200,9 @@ exclude_lines = [
     "raise NotImplementedError",
 ]
 
+[tool.uv]
+constraint-dependencies = ["starlette>=1.0.1"]
+
 [tool.uv.sources]
 openhands-sdk = { path = "src/cooperbench/agents/openhands_agent_sdk/openhands-sdk", editable = true }
 openhands-tools = { path = "src/cooperbench/agents/openhands_agent_sdk/openhands-tools", editable = true }
